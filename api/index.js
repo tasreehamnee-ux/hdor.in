@@ -36,7 +36,8 @@ async function connectToDatabase() {
       console.log('Connected to MongoDB Atlas successfully.');
       return submissionsCollection;
     } catch (err) {
-      console.error('Failed to connect to MongoDB Atlas, falling back to JSON:', err);
+      console.error('Failed to connect to MongoDB Atlas:', err);
+      throw err; // Fail loudly in production
     }
   }
   return null;
