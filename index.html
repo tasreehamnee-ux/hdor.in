@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e3c72">
+    <title>نظام الحضور والغياب - التصاريح الأمنية</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVGFzcmVlaCBBdHRlbmRhbmNlIiwic2hvcnRfbmFtZSI6IkF0dGVuZGFuY2UiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFlM2M3MiIsInRoZW1lX2NvbG9yIjoiIzFlM2M3MiJ9">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_red.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment-hijri@2.1.2/moment-hijri.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 10px; }
+        .top-header { background: white; padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border-bottom: 4px solid #c41e3a; position: sticky; top: 0; z-index: 100; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; position: relative; flex-wrap: wrap; gap: 10px; }
+        .nav-buttons { display: flex; gap: 8px; z-index: 2; flex-wrap: wrap; }
+        .nav-btn { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; font-family: 'Cairo', sans-serif; font-weight: 600; font-size: 0.9rem; transition: all 0.3s; }
+        .nav-btn:active { transform: scale(0.95); }
+        .nav-btn.primary { background: #c41e3a; color: white; }
+        .nav-btn.secondary { background: #f0f0f0; color: #333; }
+        .logo-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1; }
+        .logo-img-top { width: 60px; height: 60px; object-fit: contain; display: block; margin: 0 auto; border-radius: 50%; background: white; padding: 5px; }
+        .logo-text-top { font-size: 0.75rem; color: #c41e3a; font-weight: 700; margin-top: 5px; }
+        .container { width: 100%; max-width: 1400px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; display: none; }
+        .container.active { display: block; animation: slideUp 0.6s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .form-header { background: #f8f9fa; color: #333; padding: 25px 20px; text-align: center; border-bottom: 3px solid #c41e3a; }
+        .header-logo-main { width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; border-radius: 50%; background: white; padding: 5px; }
+        .form-container { padding: 20px 15px; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-weight: 700; color: #333; margin-bottom: 6px; font-size: 0.9rem; }
+        .required { color: #c41e3a; margin-right: 4px; }
+        .form-input, .form-select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 1rem; background: white; }
+        .form-input:focus, .form-select:focus { outline: none; border-color: #c41e3a; }
+        .date-picker-wrapper { position: relative; width: 100%; }
+        .date-input { width: 100%; padding: 12px 40px 12px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 1rem; background: white; cursor: pointer; text-align: right; }
+        .calendar-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #c41e3a; font-size: 1.2rem; pointer-events: none; }
+        .date-display { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+        .date-badge { background: #f0f0f0; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; color: #555; border: 1px solid #ddd; }
+        .date-badge.hijri { background: #d5f4e6; color: #27ae60; border-color: #27ae60; }
+        .date-badge.gregorian { background: #d6eaf8; color: #3498db; border-color: #3498db; }
+        .week-selector { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; justify-content: center; }
+        .week-btn { padding: 8px 16px; border: 2px solid #c41e3a; background: white; color: #c41e3a; border-radius: 20px; font-family: 'Cairo', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.3s; font-size: 0.85rem; }
+        .week-btn.active { background: #c41e3a; color: white; }
+        .week-btn.saved { background: #27ae60; border-color: #27ae60; color: white; }
+        .table-responsive { overflow-x: auto; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .entry-table { width: 100%; border-collapse: collapse; background: white; min-width: 800px; }
+        .entry-table th { background: #c41e3a; color: white; padding: 12px 8px; text-align: center; font-weight: 700; border: 1px solid #a01729; font-size: 0.8rem; }
+        .entry-table td { padding: 8px 5px; border: 1px solid #ddd; text-align: center; vertical-align: middle; }
+        .status-select { width: 100%; padding: 8px 5px; border: 2px solid #ddd; border-radius: 6px; font-family: 'Cairo', sans-serif; font-size: 0.85rem; font-weight: 600; background: white; cursor: pointer; text-align: center; }
+        .status-select.present { background: #d5f4e6; color: #27ae60; border-color: #27ae60; }
+        .status-select.absent { background: #fadbd8; color: #e74c3c; border-color: #e74c3c; }
+        .status-select.holiday { background: #d6eaf8; color: #3498db; border-color: #3498db; }
+        .status-select.rest { background: #fdebd0; color: #f39c12; border-color: #f39c12; }
+        .status-select.compensation { background: #e8daef; color: #9b59b6; border-color: #9b59b6; }
+        .status-select.tafreeg { background: #d1f2eb; color: #1abc9c; border-color: #1abc9c; }
+        .status-select.tafreeg-taawidi { background: #ffeaa7; color: #fdcb6e; border-color: #fdcb6e; }
+        .status-select.istiraha { background: #dfe6e9; color: #636e72; border-color: #636e72; }
+        .status-select.wajib { background: #74b9ff; color: #0984e3; border-color: #0984e3; }
+        .status-select.egaza { background: #e8daef; color: #8e44ad; border-color: #8e44ad; }
+        .status-select.egaza_maradia { background: #fadbd8; color: #c0392b; border-color: #c0392b; }
+        .shift-select { width: 100%; padding: 8px 5px; border: 2px solid #ddd; border-radius: 6px; font-family: 'Cairo', sans-serif; font-size: 0.85rem; font-weight: 600; background: white; cursor: pointer; text-align: center; }
+        .shift-select.morning { background: #fff3cd; color: #856404; border-color: #ffc107; }
+        .shift-select.evening { background: #d1ecf1; color: #0c5460; border-color: #17a2b8; }
+        .shift-select.both { background: #d4edda; color: #155724; border-color: #28a745; }
+        .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 15px; }
+        .btn-secondary { width: 100%; padding: 16px; background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .btn-success { width: 100%; padding: 16px; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .btn-warning { width: 100%; padding: 16px; background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .btn-danger { width: 100%; padding: 16px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .action-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        @media (max-width: 768px) { .action-buttons { grid-template-columns: 1fr 1fr; } }
+        @media print {
+            @page { size: A4 landscape; margin: 8mm; }
+            body { background: white; padding: 0; margin: 0; }
+            .top-header, .action-buttons, .nav-buttons { display: none !important; }
+            .container { display: block !important; box-shadow: none; border-radius: 0; max-width: 100%; width: 100%; }
+            .report-container { box-shadow: none; padding: 8px; margin: 0; max-width: 100%; width: 100%; }
+            .monthly-week { page-break-inside: avoid; break-inside: avoid; margin-bottom: 10px; width: 100%; }
+            .monthly-table { font-size: 0.7rem; width: 100%; }
+            .monthly-table th, .monthly-table td { padding: 3px 1px; font-size: 0.7rem; }
+            #reportContent { padding: 3mm; box-sizing: border-box; width: 100%; max-width: 100%; }
+            .report-header img { width: 50px; height: 50px; }
+            .report-title { font-size: 1.2rem; }
+            .report-subtitle { font-size: 0.9rem; }
+            .report-unit { font-size: 1rem; }
+            .week-header { padding: 6px; font-size: 0.9rem; }
+        }
+        .action-btn { padding: 16px 12px; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex-direction: column; min-height: 70px; }
+        .action-btn.pdf { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
+        .action-btn.whatsapp { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: white; }
+        .action-btn.print { background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white; }
+        .action-btn.back { background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%); color: white; }
+        .report-container { background: white; border-radius: 8px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; overflow: hidden; }
+        .report-header { text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #ddd; }
+        .report-header img { width: 50px; height: 50px; margin: 0 auto 8px; display: block; object-fit: contain; }
+        .report-title { font-size: 1.4rem; font-weight: 700; color: #000; margin-bottom: 5px; }
+        .report-subtitle { font-size: 1.05rem; color: #333; margin-bottom: 8px; }
+        .report-unit { text-align: right; font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border-right: 4px solid #c41e3a; }
+        .monthly-report { margin-top: 15px; }
+        .monthly-week { margin-bottom: 15px; page-break-inside: avoid; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
+        .week-header { background: #c41e3a; color: white; padding: 8px 12px; text-align: center; font-weight: 700; display: flex; justify-content: space-between; align-items: center; font-size: 1rem; }
+        .week-date { font-size: 0.95rem; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; }
+        .monthly-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; table-layout: fixed; }
+        .monthly-table th { background: #f0f0f0; color: #000; padding: 8px 4px; text-align: center; font-weight: 700; border: 1px solid #333; font-size: 0.85rem; word-wrap: break-word; overflow: hidden; }
+        .monthly-table td { padding: 6px 4px; border: 1px solid #333; text-align: center; vertical-align: middle; font-weight: 700; height: 28px; font-size: 0.9rem; word-wrap: break-word; overflow: hidden; }
+        .saved-weeks-indicator { background: #d5f4e6; border: 2px solid #27ae60; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; }
+        .saved-weeks-indicator h4 { color: #27ae60; margin-bottom: 10px; }
+        .saved-weeks-list { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .saved-week-tag { background: #27ae60; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        .loading-overlay.active { display: flex; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #c41e3a; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { color: white; margin-top: 20px; font-size: 1.1rem; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 25px; font-size: 0.9rem; z-index: 10000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 9998; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 16px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .modal-title { font-size: 1.3rem; font-weight: 700; color: #e74c3c; margin-bottom: 15px; }
+        .modal-text { font-size: 1rem; color: #555; margin-bottom: 20px; line-height: 1.6; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+        .modal-btn { padding: 10px 20px; border: none; border-radius: 8px; font-family: 'Cairo', sans-serif; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+        .modal-btn.confirm { background: #e74c3c; color: white; }
+        .modal-btn.cancel { background: #95a5a6; color: white; }
+    </style>
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">جاري معالجة الطلب...</div>
+    </div>
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-title">⚠️ تأكيد المسح</div>
+            <div class="modal-text">
+                هل أنت متأكد من مسح جميع البيانات؟<br>
+                <small>سيتم حذف جميع المعلومات المدخلة ولا يمكن التراجع عن هذا الإجراء.</small>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm" onclick="confirmClear()">نعم، امسح</button>
+                <button class="modal-btn cancel" onclick="closeModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="top-header">
+        <div class="header-content">
+            <div class="nav-buttons" style="margin-right: auto;">
+                <button class="nav-btn primary" onclick="showSection('form')">📝 تسجيل</button>
+                <button class="nav-btn secondary" onclick="showSection('dashboard')">📊 عرض التقارير</button>
+            </div>
+            <div class="logo-center">
+                <img src="image.jpeg" alt="شعار التصاريح الأمنية" class="logo-img-top">
+                <div class="logo-text-top">التصاريح الأمنية</div>
+            </div>
+            <div style="margin-left: auto; width: 150px;"></div>
+        </div>
+    </div>
+    <div class="container active" id="formSection">
+        <div class="form-header">
+            <img src="image.jpeg" alt="Logo" class="header-logo-main">
+            <h2>نموذج تسجيل الحضور والغياب</h2>
+            <p>التصاريح الأمنية - نظام إدارة الموارد البشرية</p>
+        </div>
+        <div class="form-container">
+            <div class="week-selector" id="weekSelector">
+                <button class="week-btn active" onclick="selectWeek(1)" id="week1">الأسبوع 1</button>
+                <button class="week-btn" onclick="selectWeek(2)" id="week2">الأسبوع 2</button>
+                <button class="week-btn" onclick="selectWeek(3)" id="week3">الأسبوع 3</button>
+                <button class="week-btn" onclick="selectWeek(4)" id="week4">الأسبوع 4</button>
+            </div>
+            <div class="saved-weeks-indicator" id="savedWeeksIndicator" style="display: none;">
+                <h4>✓ الأسابيع المحفوظة:</h4>
+                <div class="saved-weeks-list" id="savedWeeksList"></div>
+            </div>
+            <form id="attendanceForm">
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>الوحدة/القسم</label>
+                    <input type="text" class="form-input" id="unitName" placeholder="أدخل اسم الوحدة أو القسم" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">📎 المرفقات <span style="color: #999; font-weight: 400;">(اختياري - PDF)</span></label>
+                    <div style="border: 2px dashed #ccc; border-radius: 12px; padding: 20px; text-align: center; background: #fafafa; cursor: pointer; transition: all 0.3s;" id="attachmentDropZone" onclick="document.getElementById('attachmentInput').click()">
+                        <div style="font-size: 2.5rem; margin-bottom: 10px;">📄</div>
+                        <div style="font-weight: 700; color: #666; margin-bottom: 5px;">اضغط هنا لاختيار ملف PDF</div>
+                        <div style="font-size: 0.85rem; color: #999;">أو اسحب الملف هنا</div>
+                        <input type="file" id="attachmentInput" accept=".pdf,application/pdf" style="display: none;" onchange="handleAttachmentSelect(event)">
+                    </div>
+                    <div id="attachmentPreview" style="display: none; margin-top: 10px; padding: 10px; background: #d5f4e6; border-radius: 8px; border: 1px solid #27ae60;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.5rem;">📎</span>
+                            <div style="flex: 1;">
+                                <div id="attachmentName" style="font-weight: 700; color: #27ae60;"></div>
+                                <div id="attachmentSize" style="font-size: 0.8rem; color: #666;"></div>
+                            </div>
+                            <button type="button" onclick="removeAttachment()" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 1rem;">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" id="sendAttachmentBtn" onclick="sendAttachmentToWhatsApp()" style="display: none; margin-top: 10px; width: 100%; padding: 14px; background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; align-items: center; justify-content: center; gap: 8px;">
+                        <span>📤</span> إرسال المرفق إلى الواتساب
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>تاريخ بداية الأسبوع (ميلادي / هجري)</label>
+                    <div class="date-picker-wrapper">
+                        <input type="text" class="date-input" id="startDatePicker" placeholder="اختر التاريخ" readonly>
+                        <span class="calendar-icon">📅</span>
+                    </div>
+                    <div class="date-display" id="startDateDisplay">
+                        <span class="date-badge gregorian" id="startGregorian"></span>
+                        <span class="date-badge hijri" id="startHijri"></span>
+                    </div>
+                    <input type="hidden" id="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><span class="required">*</span>تاريخ نهاية الأسبوع (ميلادي / هجري)</label>
+                    <div class="date-picker-wrapper">
+                        <input type="text" class="date-input" id="endDatePicker" placeholder="اختر التاريخ" readonly>
+                        <span class="calendar-icon">📅</span>
+                    </div>
+                    <div class="date-display" id="endDateDisplay">
+                        <span class="date-badge gregorian" id="endGregorian"></span>
+                        <span class="date-badge hijri" id="endHijri"></span>
+                    </div>
+                    <input type="hidden" id="endDate" required>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="entry-table" id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>ت</th>
+                                <th>الاسم الثلاثي</th>
+                                <th>حالة الدوام</th>
+                                <th>السبت</th>
+                                <th>الأحد</th>
+                                <th>الإثنين</th>
+                                <th>الثلاثاء</th>
+                                <th>الأربعاء</th>
+                                <th>الخميس</th>
+                                <th>الجمعة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea class="form-input" id="weekNotes" rows="3" placeholder="أدخل أي ملاحظات على الأسبوع..." style="resize: vertical; font-family: 'Cairo', sans-serif;"></textarea>
+                </div>
+                <button type="button" class="submit-btn" onclick="addNewRow()">+ إضافة موظف جديد</button>
+                <button type="submit" class="btn-success" style="margin-top: 10px;">💾 حفظ بيانات الأسبوع</button>
+                <button type="button" class="btn-warning" onclick="showMonthlyReport()" style="margin-top: 10px;">📆 عرض التقرير الشهري</button>
+                <button type="button" class="btn-success" onclick="confirmAndSend()" style="margin-top: 10px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">📤 تأكيد وإرسال البيانات</button>
+                <button type="button" class="btn-danger" onclick="showClearConfirm()" style="margin-top: 10px;">🗑️ مسح جميع البيانات</button>
+            </form>
+        </div>
+    </div>
+    <div class="container" id="dashboardSection">
+        <div class="form-header">
+            <h2>📊 التقرير الشهري التراكمي</h2>
+        </div>
+        <div class="form-container">
+            <div class="saved-weeks-indicator" id="monthlySavedIndicator">
+                <h4>الأسابيع المحفوظة في هذا التقرير:</h4>
+                <div class="saved-weeks-list" id="monthlySavedList"></div>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn whatsapp" onclick="shareToWhatsAppAuto()">
+                    <span>💬</span>
+                    إرسال لواتساب
+                </button>
+                <button class="action-btn print" onclick="printReport()">
+                    <span>🖨️</span>
+                    طباعة
+                </button>
+                <button class="action-btn pdf" onclick="saveReportPDF()">
+                    <span>📄</span>
+                    حفظ PDF
+                </button>
+                <button class="action-btn back" onclick="backToForm()">
+                    <span>⬅️</span>
+                    عودة
+                </button>
+            </div>
+            <div class="report-container" id="reportContent">
+                <div class="report-header">
+                    <img src="image.jpeg" alt="شعار المتابعة">
+                    <div class="report-title">التقرير الشهري التراكمي</div>
+                    <div class="report-subtitle">قسم التصاريح الأمنية - شعبة المتابعة</div>
+                    <div class="report-unit" id="monthlyReportUnit">الوحدة: <span></span></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.9rem;">
+                        <div>الفترة: <span id="monthlyPeriod"></span></div>
+                        <div>تاريخ التقرير: <span id="monthlyReportDate"></span></div>
+                    </div>
+                </div>
+                <div id="monthlyReportContainer" class="monthly-report"></div>
+
+            </div>
+        </div>
+    </div>
+
+
+<script>
+        // Global Data Storage
+        let currentWeek = 1;
+        let monthlyData = {
+            unitName: '',
+            weeks: {}
+        };
+        let currentAttachment = null;
+        let startDatePickerInstance = null;
+        let endDatePickerInstance = null;
+        const ADMIN_WHATSAPP = '9647711059176';
+        let isAdminAuthenticated = false;
+
+        const statusOptions = [
+            {value: 'present', text: 'حاضر', class: 'present'},
+            {value: 'absent', text: 'غائب', class: 'absent'},
+            {value: 'holiday', text: 'عطلة رسمية', class: 'holiday'},
+            {value: 'rest', text: 'عطلة اسبوعية', class: 'rest'},
+            {value: 'compensation', text: 'تعويضية', class: 'compensation'},
+            {value: 'tafreeg', text: 'تفرغ', class: 'tafreeg'},
+            {value: 'tafreeg-taawidi', text: 'تفريغ تعويضية', class: 'tafreeg-taawidi'},
+            {value: 'istiraha', text: 'استراحة', class: 'istiraha'},
+            {value: 'wajib', text: 'واجب', class: 'wajib'},
+            {value: 'egaza', text: 'اجازة اعتيادية', class: 'egaza'},
+            {value: 'egaza_maradia', text: 'اجازة مرضية', class: 'egaza_maradia'}
+        ];
+
+        const shiftOptions = [
+            {value: 'morning', text: 'صباحي', class: 'morning'},
+            {value: 'evening', text: 'مسائي', class: 'evening'},
+            {value: 'both', text: 'كلاهما', class: 'both'}
+        ];
+
+        const statusFullNames = {
+            'present': 'حاضر', 'absent': 'غائب', 'holiday': 'عطلة رسمية',
+            'rest': 'عطلة اسبوعية', 'compensation': 'تعويضية', 'tafreeg': 'تفرغ',
+            'tafreeg-taawidi': 'تفريغ تعويضية', 'istiraha': 'استراحة', 'wajib': 'واجب',
+            'egaza': 'اجازة اعتيادية', 'egaza_maradia': 'اجازة مرضية'
+        };
+
+        const shiftNames = {
+            'morning': 'صباحي', 'evening': 'مسائي', 'both': 'كلاهما'
+        };
+
+        const weekNames = [
+            'الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع'
+        ];
+
+        function initHijriConverter() {
+            moment.locale('ar');
+        }
+
+        function gregorianToHijri(date) {
+            const m = moment(date);
+            const hijriDate = m.format('iYYYY/iMM/iDD');
+            const hijriMonth = m.format('iMMMM');
+            const hijriYear = m.format('iYYYY');
+            return {
+                full: hijriDate,
+                display: m.format('iDD') + ' ' + hijriMonth + ' ' + hijriYear + ' هـ',
+                year: parseInt(m.format('iYYYY')),
+                month: parseInt(m.format('iMM')),
+                day: parseInt(m.format('iDD'))
+            };
+        }
+
+        function initDatePickers() {
+            startDatePickerInstance = flatpickr("#startDatePicker", {
+                locale: "ar",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "Y-m-d",
+                disableMobile: false,
+                static: false,
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (selectedDates[0]) {
+                        const date = selectedDates[0];
+                        const hijri = gregorianToHijri(date);
+                        const gregorianStr = moment(date).format('YYYY/MM/DD');
+                        document.getElementById('startDate').value = gregorianStr;
+                        document.getElementById('startGregorian').textContent = gregorianStr + ' م';
+                        document.getElementById('startHijri').textContent = hijri.display;
+                        const endDate = new Date(date);
+                        endDate.setDate(endDate.getDate() + 6);
+                        endDatePickerInstance.setDate(endDate);
+                        const endHijri = gregorianToHijri(endDate);
+                        const endGregorianStr = moment(endDate).format('YYYY/MM/DD');
+                        document.getElementById('endDate').value = endGregorianStr;
+                        document.getElementById('endGregorian').textContent = endGregorianStr + ' م';
+                        document.getElementById('endHijri').textContent = endHijri.display;
+                    }
+                }
+            });
+
+            endDatePickerInstance = flatpickr("#endDatePicker", {
+                locale: "ar",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "Y-m-d",
+                disableMobile: false,
+                static: false,
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (selectedDates[0]) {
+                        const date = selectedDates[0];
+                        const hijri = gregorianToHijri(date);
+                        const gregorianStr = moment(date).format('YYYY/MM/DD');
+                        document.getElementById('endDate').value = gregorianStr;
+                        document.getElementById('endGregorian').textContent = gregorianStr + ' م';
+                        document.getElementById('endHijri').textContent = hijri.display;
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initDB().then(() => console.log('IndexedDB Initialized')).catch(err => console.error('IndexedDB Failed', err));
+            initHijriConverter();
+            initDatePickers();
+            const savedMonthly = localStorage.getItem('monthlyAttendance');
+            if (savedMonthly) {
+                monthlyData = JSON.parse(savedMonthly);
+                updateSavedWeeksIndicator();
+            }
+            initializeMonthDates();
+            loadWeekData(currentWeek);
+
+
+            // Setup drag and drop for attachment
+            const dropZone = document.getElementById('attachmentDropZone');
+            if (dropZone) {
+                dropZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.style.background = '#f0f0f0';
+                    this.style.borderColor = '#999';
+                });
+                dropZone.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    if (!currentAttachment) {
+                        this.style.background = '#fafafa';
+                        this.style.borderColor = '#ccc';
+                    } else {
+                        this.style.background = '#f0fff4';
+                        this.style.borderColor = '#27ae60';
+                    }
+                });
+                dropZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    if (!currentAttachment) {
+                        this.style.background = '#fafafa';
+                        this.style.borderColor = '#ccc';
+                    } else {
+                        this.style.background = '#f0fff4';
+                        this.style.borderColor = '#27ae60';
+                    }
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const fakeEvent = { target: { files: files } };
+                        handleAttachmentSelect(fakeEvent);
+                    }
+                });
+            }
+});
+
+        function initializeMonthDates() {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            while (firstDay.getDay() !== 6) {
+                firstDay.setDate(firstDay.getDate() + 1);
+            }
+            const weekStart = new Date(firstDay);
+            weekStart.setDate(firstDay.getDate() + ((currentWeek - 1) * 7));
+            if (startDatePickerInstance) {
+                startDatePickerInstance.setDate(weekStart);
+            }
+            monthlyData.monthStart = firstDay.toISOString().split('T')[0];
+        }
+
+        function selectWeek(weekNum) {
+            saveCurrentWeekData();
+            currentWeek = weekNum;
+            document.querySelectorAll('.week-btn').forEach((btn, idx) => {
+                btn.classList.remove('active');
+                if (idx + 1 === weekNum) btn.classList.add('active');
+            });
+            const monthStart = new Date(monthlyData.monthStart || new Date());
+            const weekStart = new Date(monthStart);
+            weekStart.setDate(monthStart.getDate() + ((currentWeek - 1) * 7));
+            if (startDatePickerInstance) {
+                startDatePickerInstance.setDate(weekStart);
+            }
+            loadWeekData(weekNum);
+        }
+
+        function saveCurrentWeekData() {
+            const unitName = document.getElementById('unitName').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            if (!unitName || !startDate) return;
+            monthlyData.unitName = unitName;
+            const rows = document.getElementById('tableBody').querySelectorAll('tr');
+            const employees = [];
+            rows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 2) {
+                    const name = cells[1].querySelector('input') ? cells[1].querySelector('input').value : '';
+                    const shift = cells[2].querySelector('select') ? cells[2].querySelector('select').value : 'morning';
+                    if (name.trim() !== '') {
+                        const days = [];
+                        for (let i = 3; i < 10; i++) {
+                            days.push(cells[i].querySelector('select') ? cells[i].querySelector('select').value : 'present');
+                        }
+                        employees.push({
+                            id: index + 1,
+                            name: name,
+                            shift: shift,
+                            days: days
+                        });
+                    }
+                }
+            });
+            if (employees.length > 0) {
+                monthlyData.weeks[currentWeek] = {
+                    weekNumber: currentWeek,
+                    startDate: startDate,
+                    endDate: endDate,
+                    employees: employees,
+                    notes: document.getElementById('weekNotes').value || '',
+                    savedAt: Date.now()
+                };
+                localStorage.setItem('monthlyAttendance', JSON.stringify(monthlyData));
+                updateSavedWeeksIndicator();
+                document.getElementById('week' + currentWeek).classList.add('saved');
+            }
+        }
+
+        function loadWeekData(weekNum) {
+            const weekData = monthlyData.weeks[weekNum];
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            if (weekData && weekData.employees) {
+                weekData.employees.forEach(emp => addEmployeeRow(emp));
+                if (weekData.startDate && startDatePickerInstance) {
+                    startDatePickerInstance.setDate(weekData.startDate);
+                }
+                document.getElementById('weekNotes').value = weekData.notes || '';
+            } else {
+                for(let i = 0; i < 5; i++) addNewRow();
+                document.getElementById('workStatus').value = 'morning';
+            }
+            if (monthlyData.unitName) document.getElementById('unitName').value = monthlyData.unitName;
+            }
+
+        function updateSavedWeeksIndicator() {
+            const indicator = document.getElementById('savedWeeksIndicator');
+            const list = document.getElementById('savedWeeksList');
+            const savedWeeks = Object.keys(monthlyData.weeks).map(Number).sort();
+            if (savedWeeks.length > 0) {
+                indicator.style.display = 'block';
+                list.innerHTML = savedWeeks.map(w => '<span class="saved-week-tag">' + weekNames[w-1] + '</span>').join('');
+                savedWeeks.forEach(w => document.getElementById('week' + w).classList.add('saved'));
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        function addEmployeeRow(empData) {
+            const tbody = document.getElementById('tableBody');
+            const rowCount = tbody.children.length + 1;
+            const days = empData.days || ['rest', 'present', 'present', 'present', 'present', 'present', 'rest'];
+            let statusHtml = '';
+            days.forEach((dayVal) => {
+                let optionsHtml = '';
+                statusOptions.forEach(opt => {
+                    const selected = opt.value === dayVal ? 'selected' : '';
+                    optionsHtml += '<option value="' + opt.value + '" class="' + opt.class + '" ' + selected + '>' + opt.text + '</option>';
+                });
+                statusHtml += '<td><select class="status-select ' + dayVal + '" onchange="updateSelectStyle(this)">' + optionsHtml + '</select></td>';
+            });
+            let shiftHtml = '';
+            const currentShift = empData.shift || 'morning';
+            shiftOptions.forEach((opt) => {
+                const selected = opt.value === currentShift ? 'selected' : '';
+                shiftHtml += '<option value="' + opt.value + '" class="' + opt.class + '" ' + selected + '>' + opt.text + '</option>';
+            });
+            const row = document.createElement('tr');
+            row.innerHTML = '<td>' + rowCount + '</td>' +
+                '<td><input type="text" class="form-input" style="width: 100%; min-width: 140px;" placeholder="الاسم الثلاثي" value="' + (empData.name || '') + '"></td>' +
+                '<td><select class="shift-select ' + currentShift + '" onchange="updateShiftStyle(this)" style="min-width: 100px;">' + shiftHtml + '</select></td>' +
+                statusHtml;
+            tbody.appendChild(row);
+        }
+
+        function addNewRow() {
+            const tbody = document.getElementById('tableBody');
+            const rowCount = tbody.children.length + 1;
+            const defaultDays = ['rest', 'present', 'present', 'present', 'present', 'present', 'rest'];
+            let statusHtml = '';
+            defaultDays.forEach((defaultVal) => {
+                let optionsHtml = '';
+                statusOptions.forEach(opt => {
+                    const selected = opt.value === defaultVal ? 'selected' : '';
+                    optionsHtml += '<option value="' + opt.value + '" class="' + opt.class + '" ' + selected + '>' + opt.text + '</option>';
+                });
+                statusHtml += '<td><select class="status-select ' + defaultVal + '" onchange="updateSelectStyle(this)">' + optionsHtml + '</select></td>';
+            });
+            let shiftHtml = '';
+            shiftOptions.forEach((opt, idx) => {
+                const selected = idx === 0 ? 'selected' : '';
+                shiftHtml += '<option value="' + opt.value + '" class="' + opt.class + '" ' + selected + '>' + opt.text + '</option>';
+            });
+            const row = document.createElement('tr');
+            row.innerHTML = '<td>' + rowCount + '</td>' +
+                '<td><input type="text" class="form-input" style="width: 100%; min-width: 140px;" placeholder="الاسم الثلاثي"></td>' +
+                '<td><select class="shift-select morning" onchange="updateShiftStyle(this)" style="min-width: 100px;">' + shiftHtml + '</select></td>' +
+                statusHtml;
+            tbody.appendChild(row);
+        }
+
+        function updateSelectStyle(select) {
+            statusOptions.forEach(opt => select.classList.remove(opt.value));
+            select.classList.add(select.value);
+        }
+
+        function updateShiftStyle(select) {
+            shiftOptions.forEach(opt => select.classList.remove(opt.value));
+            select.classList.add(select.value);
+        }
+
+        document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveCurrentWeekData();
+            showToast('✅ تم حفظ بيانات ' + weekNames[currentWeek-1] + ' بنجاح');
+            document.getElementById('week' + currentWeek).classList.add('saved');
+            updateSavedWeeksIndicator();
+        });
+
+        function showMonthlyReport() {
+            saveCurrentWeekData();
+            const savedWeeks = Object.keys(monthlyData.weeks);
+            if (savedWeeks.length === 0) {
+                showToast('❌ لا توجد بيانات محفوظة');
+                return;
+            }
+            generateMonthlyReportView();
+            showSection('dashboard');
+        }
+
+        function filterDuplicateWeeks(weeksData) {
+            const filtered = {};
+            const seenWeekNumbers = new Set();
+            const sortedWeeks = Object.values(weeksData).sort((a, b) => {
+                const timeA = a.savedAt || a.weekNumber;
+                const timeB = b.savedAt || b.weekNumber;
+                return timeB - timeA;
+            });
+            sortedWeeks.forEach(week => {
+                const weekNum = week.weekNumber;
+                if (!seenWeekNumbers.has(weekNum)) {
+                    seenWeekNumbers.add(weekNum);
+                    filtered[weekNum] = week;
+                }
+            });
+            return filtered;
+        }
+
+        function generateMonthlyReportView() {
+            const container = document.getElementById('monthlyReportContainer');
+            container.innerHTML = '';
+            document.getElementById('monthlyReportUnit').querySelector('span').textContent = monthlyData.unitName || 'غير محدد';
+            const filteredWeeks = filterDuplicateWeeks(monthlyData.weeks);
+            monthlyData.weeks = filteredWeeks;
+            localStorage.setItem('monthlyAttendance', JSON.stringify(monthlyData));
+            const weeks = Object.values(filteredWeeks).sort((a, b) => a.weekNumber - b.weekNumber);
+            if (weeks.length > 0) {
+                const firstWeek = weeks[0];
+                const lastWeek = weeks[weeks.length - 1];
+                const startHijri = gregorianToHijri(firstWeek.startDate);
+                const endHijri = gregorianToHijri(lastWeek.endDate);
+                document.getElementById('monthlyPeriod').textContent =
+                    firstWeek.startDate + ' (' + startHijri.display + ') إلى ' + lastWeek.endDate + ' (' + endHijri.display + ')';
+            }
+            document.getElementById('monthlyReportDate').textContent = new Date().toLocaleDateString('ar-SA');
+            const savedList = document.getElementById('monthlySavedList');
+            savedList.innerHTML = weeks.map(w => {
+                const wh = gregorianToHijri(w.startDate);
+                return '<span class="saved-week-tag">' + weekNames[w.weekNumber-1] + ' (' + wh.display + ')</span>';
+            }).join('');
+
+            weeks.forEach(weekData => {
+                const weekDiv = document.createElement('div');
+                weekDiv.className = 'monthly-week';
+                weekDiv.style.maxWidth = '100%';
+                weekDiv.style.overflow = 'hidden';
+                const weekHijri = gregorianToHijri(weekData.startDate);
+                const weekEndHijri = gregorianToHijri(weekData.endDate);
+                const weekHeader = document.createElement('div');
+                weekHeader.className = 'week-header';
+                weekHeader.innerHTML = '<span>' + weekNames[weekData.weekNumber-1] + '</span>' +
+                    '<span class="week-date">' + weekData.startDate + ' (' + weekHijri.display + ') - ' + weekData.endDate + ' (' + weekEndHijri.display + ')</span>';
+                weekDiv.appendChild(weekHeader);
+
+                const table = document.createElement('table');
+                table.className = 'monthly-table';
+                table.style.tableLayout = 'fixed';
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                headerRow.style.background = '#f0f0f0';
+                headerRow.innerHTML = '<th style="width: 3%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">ت</th>' +
+                    '<th style="width: 16%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الاسم الثلاثي</th>' +
+                    '<th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">السبت</th>' +
+                    '<th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الأحد</th>' +
+                    '<th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الإثنين</th>' +
+                    '<th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الثلاثاء</th>' +
+                    '<th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الأربعاء</th>' +
+                    '<th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الخميس</th>' +
+                    '<th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الجمعة</th>' +
+                    '<th style="width: 14%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">حالة الدوام</th>';
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                weekData.employees.forEach(emp => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; overflow: hidden;">' + emp.id + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; word-wrap: break-word; overflow: hidden;">' + emp.name + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ' + getStatusColor(emp.days[0]) + '; font-weight: bold; overflow: hidden;">' + (statusFullNames[emp.days[0]] || emp.days[0]) + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ' + getStatusColor(emp.days[1]) + '; font-weight: bold; overflow: hidden;">' + (statusFullNames[emp.days[1]] || emp.days[1]) + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ' + getStatusColor(emp.days[2]) + '; font-weight: bold; overflow: hidden;">' + (statusFullNames[emp.days[2]] || emp.days[2]) + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ' + getStatusColor(emp.days[3]) + '; font-weight: bold; overflow: hidden;">' + (statusFullNames[emp.days[3]] || emp.days[3]) + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ' + getStatusColor(emp.days[4]) + '; font-weight: bold; overflow: hidden;">' + (statusFullNames[emp.days[4]] || emp.days[4]) + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ' + getStatusColor(emp.days[5]) + '; font-weight: bold; overflow: hidden;">' + (statusFullNames[emp.days[5]] || emp.days[5]) + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ' + getStatusColor(emp.days[6]) + '; font-weight: bold; overflow: hidden;">' + (statusFullNames[emp.days[6]] || emp.days[6]) + '</td>' +
+                        '<td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; font-weight: bold; color: ' + getShiftColor(emp.shift || 'morning') + '; overflow: hidden;">' + (shiftNames[emp.shift || 'morning'] || 'صباحي') + '</td>';
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                weekDiv.appendChild(table);
+
+
+                                // إضافة الملاحظات إن وجدت
+                if (weekData.notes && weekData.notes.trim() !== '') {
+                    const notesDiv = document.createElement('div');
+                    notesDiv.style.background = '#fffbeb';
+                    notesDiv.style.border = '1px solid #f59e0b';
+                    notesDiv.style.borderRadius = '6px';
+                    notesDiv.style.padding = '10px 15px';
+                    notesDiv.style.marginTop = '10px';
+                    notesDiv.style.fontSize = '0.85rem';
+                    notesDiv.style.color = '#92400e';
+                    notesDiv.style.fontWeight = '600';
+                    notesDiv.innerHTML = '<span style="color: #c41e3a;">📌 ملاحظات:</span> ' + weekData.notes;
+                    weekDiv.appendChild(notesDiv);
+                }
+
+                container.appendChild(weekDiv);
+            });
+        }
+
+
+        // Attachment Handling Functions
+        function handleAttachmentSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                showToast('❌ يرجى اختيار ملف PDF فقط');
+                return;
+            }
+
+            if (file.size > 50 * 1024 * 1024) {
+                showToast('❌ حجم الملف كبير جداً (الحد الأقصى 50 ميجابايت)');
+                return;
+            }
+
+            currentAttachment = file;
+            document.getElementById('attachmentName').textContent = file.name;
+            document.getElementById('attachmentSize').textContent = formatFileSize(file.size);
+            document.getElementById('attachmentPreview').style.display = 'block';
+            document.getElementById('sendAttachmentBtn').style.display = 'flex';
+            document.getElementById('attachmentDropZone').style.borderColor = '#27ae60';
+            document.getElementById('attachmentDropZone').style.background = '#f0fff4';
+            showToast('✅ تم اختيار الملف: ' + file.name);
+        }
+
+        function removeAttachment() {
+            currentAttachment = null;
+            document.getElementById('attachmentInput').value = '';
+            document.getElementById('attachmentPreview').style.display = 'none';
+            document.getElementById('sendAttachmentBtn').style.display = 'none';
+            document.getElementById('attachmentDropZone').style.borderColor = '#ccc';
+            document.getElementById('attachmentDropZone').style.background = '#fafafa';
+            showToast('🗑️ تم إزالة الملف المرفق');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 بايت';
+            const k = 1024;
+            const sizes = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function sendAttachmentToWhatsApp() {
+            if (!currentAttachment) {
+                showToast('❌ لا يوجد ملف مرفق للإرسال');
+                return;
+            }
+
+            showLoading(true);
+            showToast('⏳ جاري إعداد الملف للإرسال...');
+
+            try {
+                let message = '📎 *مرفق جديد*\n';
+                message += '━━━━━━━━━━━━━━\n';
+                message += '📄 اسم الملف: ' + currentAttachment.name + '\n';
+                message += '📊 الحجم: ' + formatFileSize(currentAttachment.size) + '\n';
+                if (monthlyData.unitName) {
+                    message += '🏢 الوحدة: ' + monthlyData.unitName + '\n';
+                }
+                message += '━━━━━━━━━━━━━━\n';
+                message += '⬇️ يرجى تحميل الملف المرفق';
+
+                // Method 1: Try Native Share API (works on mobile browsers)
+                if (navigator.share && navigator.canShare) {
+                    const shareData = {
+                        title: 'مرفق PDF',
+                        text: message,
+                        files: [currentAttachment]
+                    };
+
+                    if (navigator.canShare(shareData)) {
+                        await navigator.share(shareData);
+                        showToast('✅ تم فتح مشاركة الملف - اختر واتساب');
+                        showLoading(false);
+                        return;
+                    }
+                }
+
+                // Method 2: Fallback - Download file + open WhatsApp with text
+                const attachUrl = URL.createObjectURL(currentAttachment);
+                const link = document.createElement('a');
+                link.href = attachUrl;
+                link.download = currentAttachment.name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                const whatsappUrl = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(message);
+
+                setTimeout(() => {
+                    window.open(whatsappUrl, '_blank');
+                    showToast('📱 تم تحميل الملف وفتح واتساب - أرسل الملف يدوياً');
+                }, 800);
+
+            } catch (error) {
+                console.error('Attachment Send Error:', error);
+                showToast('❌ حدث خطأ أثناء الإرسال');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'present': '#27ae60', 'absent': '#e74c3c', 'holiday': '#3498db',
+                'rest': '#f39c12', 'compensation': '#9b59b6', 'tafreeg': '#1abc9c',
+                'tafreeg-taawidi': '#fdcb6e', 'istiraha': '#636e72', 'wajib': '#0984e3',
+                'egaza': '#8e44ad', 'egaza_maradia': '#c0392b'
+            };
+            return colors[status] || '#000';
+        }
+
+        function getShiftColor(shift) {
+            const colors = {
+                'morning': '#856404',
+                'evening': '#0c5460',
+                'both': '#155724'
+            };
+            return colors[shift] || '#000';
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+            if (section === 'form') {
+                document.getElementById('formSection').classList.add('active');
+            } else if (section === 'dashboard') {
+                document.getElementById('dashboardSection').classList.add('active');
+            } else if (section === 'admin') {
+                if (isAdminAuthenticated) {
+                    document.getElementById('adminSection').classList.add('active');
+                    refreshAdminData();
+                } else {
+                    openAdminPasswordModal();
+                }
+            }
+        }
+
+        function backToForm() {
+            showSection('form');
+        }
+
+        async function shareToWhatsAppAuto() {
+            showLoading(true);
+            showToast('⏳ جاري إعداد ملف PDF للإرسال...');
+            try {
+                const { pdf } = await generateReportPDF();
+                const pdfBlob = pdf.output('blob');
+                const safeUnitName = (monthlyData.unitName || 'tasreeh').replace(/[^a-zA-Z0-9]/g, '_');
+                const pdfFile = new File([pdfBlob], 'attendance_report_' + safeUnitName + '_' + new Date().toISOString().split('T')[0] + '.pdf', { type: 'application/pdf' });
+                if (navigator.share && navigator.canShare) {
+                    if (navigator.canShare({ files: [pdfFile] })) {
+                        await navigator.share({
+                            title: 'تقرير الحضور الشهري',
+                            text: 'تقرير الحضور - ' + (monthlyData.unitName || 'التصاريح'),
+                            files: [pdfFile]
+                        });
+                        showToast('✅ تم فتح مشاركة ملف PDF');
+                        showLoading(false);
+                        return;
+                    }
+                }
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                const link = document.createElement('a');
+                link.download = 'attendance_report_' + safeUnitName + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+                link.href = pdfUrl;
+                link.click();
+                const message = 'تقرير الحضور الشهري - ' + (monthlyData.unitName || 'التصاريح') + '\nتوقيع المشرف: سامر ستار';
+                const whatsappUrl = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(message);
+                setTimeout(() => {
+                    window.open(whatsappUrl, '_blank');
+                    showToast('📱 تم حفظ ملف PDF وفتح واتساب - أرسل الملف يدوياً');
+                }, 1000);
+            } catch (error) {
+                console.error('Share Error:', error);
+                const message = 'تقرير الحضور الشهري - ' + (monthlyData.unitName || 'التصاريح');
+                window.open('https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(message), '_blank');
+                showToast('📱 جاري فتح واتساب');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function printReport() {
+            // Force landscape orientation for printing
+            const style = document.createElement('style');
+            style.innerHTML = '@page { size: A4 landscape !important; }';
+            document.head.appendChild(style);
+            window.print();
+            setTimeout(() => document.head.removeChild(style), 1000);
+        }
+
+        async function generateReportPDF() {
+            const { jsPDF } = window.jspdf;
+            const reportContent = document.getElementById('reportContent');
+
+            // إنشاء نسخة مؤقتة من المحتوى مع إضافة توقيع المشرف في التذييل
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = reportContent.innerHTML;
+            tempDiv.style.width = '100%';
+            tempDiv.style.maxWidth = '277mm';
+            tempDiv.style.backgroundColor = '#ffffff';
+            tempDiv.style.padding = '15px';
+            tempDiv.style.boxSizing = 'border-box';
+            tempDiv.style.direction = 'rtl';
+            tempDiv.style.overflow = 'hidden';
+
+            // إضافة تذييل الصفحة
+            const footerDiv = document.createElement('div');
+            footerDiv.style.display = 'flex';
+            footerDiv.style.justifyContent = 'flex-start';
+            footerDiv.style.alignItems = 'center';
+            footerDiv.style.marginTop = '20px';
+            footerDiv.style.paddingTop = '15px';
+            footerDiv.style.fontFamily = "'Cairo', sans-serif";
+            footerDiv.style.fontSize = '13px';
+            footerDiv.style.fontWeight = 'bold';
+            footerDiv.style.color = '#333';
+            footerDiv.innerHTML = '<div>توقيع المشرف: <span style=\'color: #c41e3a; font-size: 15px;\'>سامر ستار</span></div>';
+            tempDiv.appendChild(footerDiv);
+
+            document.body.appendChild(tempDiv);
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            tempDiv.style.top = '0';
+
+            const canvas = await html2canvas(tempDiv, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                windowWidth: 1123,
+                windowHeight: 794,
+                logging: false
+            });
+
+            document.body.removeChild(tempDiv);
+
+            const imgData = canvas.toDataURL('image/png');
+
+            // إعدادات PDF أفقي (Landscape) A4
+            const margin = 8; // هوامش 8 ملم من كل جانب
+            const pdfWidth = 297;  // عرض A4 أفقي
+            const pdfHeight = 210; // ارتفاع A4 أفقي
+            const contentWidth = pdfWidth - (margin * 2);  // 281mm
+            const contentHeight = pdfHeight - (margin * 2); // 194mm
+
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+
+            // حساب النسبة لتناسب المحتوى داخل الهوامش بدون خروج
+            const ratioX = contentWidth / imgWidth;
+            const ratioY = contentHeight / imgHeight;
+            const ratio = Math.min(ratioX, ratioY);
+
+            const scaledWidth = imgWidth * ratio;
+            const scaledHeight = imgHeight * ratio;
+
+            // توسيط المحتوى داخل الصفحة
+            const imgX = margin + (contentWidth - scaledWidth) / 2;
+            const imgY = margin + (contentHeight - scaledHeight) / 2;
+
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
+            return { pdf };
+        }
+
+        async function saveReportPDF() {
+            showLoading(true);
+            showToast('⏳ جاري إنشاء ملف PDF...');
+            try {
+                const { pdf } = await generateReportPDF();
+                const safeUnitName = (monthlyData.unitName || 'tasreeh').replace(/[^a-zA-Z0-9]/g, '_');
+                const fileName = 'attendance_report_' + safeUnitName + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+                pdf.save(fileName);
+                showToast('✅ تم حفظ ملف PDF بنجاح');
+            } catch (error) {
+                console.error('PDF Error:', error);
+                showToast('❌ فشل إنشاء ملف PDF');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showClearConfirm() {
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+        }
+
+        function confirmClear() {
+            monthlyData = { unitName: '', supervisor: '', weeks: {} };
+            localStorage.removeItem('monthlyAttendance');
+            document.getElementById('unitName').value = '';
+            document.querySelectorAll('.week-btn').forEach(btn => btn.classList.remove('saved'));
+            updateSavedWeeksIndicator();
+            loadWeekData(1);
+            closeModal();
+            showToast('✅ تم مسح جميع البيانات');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('active', show);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // --- CLIENT STORAGE ENGINE AND SUBMIT ---
+
+        // IndexedDB Configuration
+        const DB_NAME = 'AttendanceAdminDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'submissions';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = event => reject(event.target.error);
+                request.onsuccess = event => resolve(event.target.result);
+                request.onupgradeneeded = event => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+            });
+        }
+
+        function addSubmissionDB(submission) {
+            return initDB().then(db => {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction([STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.add(submission);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            });
+        }
+
+        // Test if server backend is available
+        async function checkServerAvailable() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const response = await fetch('/api/submissions', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                return response.ok;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function confirmAndSend() {
+            const unitName = document.getElementById('unitName').value.trim();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!unitName) {
+                showToast('❌ يرجى إدخال اسم الوحدة/القسم أولاً');
+                document.getElementById('unitName').focus();
+                return;
+            }
+            if (!startDate || !endDate) {
+                showToast('❌ يرجى اختيار تواريخ الأسبوع أولاً');
+                return;
+            }
+
+            saveCurrentWeekData();
+
+            const savedWeeksKeys = Object.keys(monthlyData.weeks);
+            if (savedWeeksKeys.length === 0) {
+                showToast('❌ يرجى حفظ بيانات أسبوع واحد على الأقل قبل الإرسال');
+                return;
+            }
+
+            if (!confirm('هل أنت متأكد من رغبتك في تأكيد وإرسال البيانات المجمّعة والمرفق؟')) {
+                return;
+            }
+
+            showLoading(true);
+            showToast('⏳ جاري إرسال وحفظ البيانات...');
+
+            const serverAvailable = await checkServerAvailable();
+            
+            const submissionPayload = {
+                unitName: monthlyData.unitName,
+                startDate: monthlyData.weeks[savedWeeksKeys[0]].startDate,
+                endDate: monthlyData.weeks[savedWeeksKeys[savedWeeksKeys.length - 1]].endDate,
+                weeks: monthlyData.weeks,
+                notes: document.getElementById('weekNotes').value || ''
+            };
+
+            const localPayload = {
+                ...submissionPayload,
+                id: Date.now(),
+                submittedAt: new Date().toISOString(),
+                attachment: null
+            };
+
+            if (currentAttachment) {
+                localPayload.attachment = {
+                    originalName: currentAttachment.name,
+                    blob: currentAttachment,
+                    size: currentAttachment.size,
+                    type: currentAttachment.type
+                };
+            }
+
+            try {
+                let sentToServer = false;
+                if (serverAvailable) {
+                    const formData = new FormData();
+                    formData.append('unitName', submissionPayload.unitName);
+                    formData.append('startDate', submissionPayload.startDate);
+                    formData.append('endDate', submissionPayload.endDate);
+                    formData.append('weeks', JSON.stringify(submissionPayload.weeks));
+                    formData.append('notes', submissionPayload.notes);
+                    
+                    if (currentAttachment) {
+                        formData.append('attachment', currentAttachment);
+                    }
+
+                    const response = await fetch('/api/submissions', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        sentToServer = true;
+                    } else {
+                        throw new Error(result.message);
+                    }
+                }
+
+                await addSubmissionDB(localPayload);
+
+                if (sentToServer) {
+                    showToast('✅ تم تأكيد وإرسال وحفظ البيانات بنجاح');
+                } else {
+                    showToast('✅ تم الحفظ بنجاح محلياً (أوفلاين) في قاعدة بيانات المتصفح');
+                }
+
+                try {
+                    const { pdf } = await generateReportPDF();
+                    const safeUnitName = (monthlyData.unitName || 'tasreeh').replace(/[^a-zA-Z0-9]/g, '_');
+                    const fileName = 'نسخة_حفظ_الحضور_' + safeUnitName + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+                    pdf.save(fileName);
+                    showToast('💾 تم تنزيل نسخة PDF وحفظها في جهازك');
+                } catch (pdfErr) {
+                    console.error('Error generating user local PDF copy:', pdfErr);
+                    showToast('⚠️ تم الحفظ ولكن فشل تنزيل النسخة المحلية كـ PDF');
+                }
+            } catch (error) {
+                console.error('Error during send:', error);
+                showToast('❌ حدث خطأ أثناء الإرسال: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        document.getElementById('confirmModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>

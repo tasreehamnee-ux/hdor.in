@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>لوحة تحكم المشرف - نظام الحضور والغياب</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment-hijri@2.1.2/moment-hijri.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 15px; }
+        .top-header { background: white; padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border-bottom: 4px solid #1e3c72; display: flex; justify-content: space-between; align-items: center; }
+        .logo-center { display: flex; align-items: center; gap: 10px; }
+        .logo-img-top { width: 45px; height: 45px; object-fit: contain; border-radius: 50%; background: white; padding: 2px; }
+        .logo-text-top { font-size: 1.1rem; color: #1e3c72; font-weight: 700; }
+        .container { width: 100%; max-width: 1400px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; display: none; }
+        .container.active { display: block; animation: slideUp 0.6s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .form-header { background: #1e3c72; color: white; padding: 25px 20px; text-align: center; border-bottom: 3px solid #c41e3a; }
+        .form-container { padding: 20px 15px; }
+        .table-responsive { overflow-x: auto; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .entry-table { width: 100%; border-collapse: collapse; background: white; min-width: 900px; }
+        .entry-table th { background: #1e3c72; color: white; padding: 12px 8px; text-align: center; font-weight: 700; border: 1px solid #152d56; font-size: 0.85rem; }
+        .entry-table td { padding: 10px 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle; font-size: 0.9rem; }
+        
+        /* Buttons */
+        .nav-btn { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-family: 'Cairo', sans-serif; font-weight: 600; font-size: 0.85rem; transition: all 0.3s; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+        .nav-btn:active { transform: scale(0.95); }
+        .nav-btn.primary { background: #1e3c72; color: white; }
+        .nav-btn.secondary { background: #f0f0f0; color: #333; }
+        .nav-btn.danger { background: #e74c3c; color: white; }
+        
+        .action-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .action-btn { padding: 14px 12px; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; }
+        .action-btn:active { transform: scale(0.95); }
+        
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 9998; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 16px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .modal-title { font-size: 1.3rem; font-weight: 700; color: #1e3c72; margin-bottom: 15px; }
+        .modal-text { font-size: 1rem; color: #555; margin-bottom: 20px; line-height: 1.6; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+        .modal-btn { padding: 10px 20px; border: none; border-radius: 8px; font-family: 'Cairo', sans-serif; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+        .modal-btn.confirm { background: #1e3c72; color: white; }
+        .modal-btn.cancel { background: #95a5a6; color: white; }
+        .form-input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 1rem; background: white; outline: none; }
+        .form-input:focus { border-color: #1e3c72; }
+        
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        .loading-overlay.active { display: flex; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #1e3c72; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { color: white; margin-top: 20px; font-size: 1.1rem; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 25px; font-size: 0.9rem; z-index: 10000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+
+        /* Report styling */
+        .report-container { background: white; border-radius: 8px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 100%; overflow: hidden; }
+        .report-header { text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #ddd; }
+        .report-header img { width: 50px; height: 50px; margin: 0 auto 8px; display: block; object-fit: contain; }
+        .report-title { font-size: 1.4rem; font-weight: 700; color: #000; margin-bottom: 5px; }
+        .report-subtitle { font-size: 1.05rem; color: #333; margin-bottom: 8px; }
+        .monthly-report { margin-top: 15px; }
+        .monthly-week { margin-bottom: 15px; page-break-inside: avoid; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
+        .week-header { background: #c41e3a; color: white; padding: 8px 12px; text-align: center; font-weight: 700; display: flex; justify-content: space-between; align-items: center; font-size: 1rem; }
+        .week-date { font-size: 0.95rem; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; }
+        .monthly-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; table-layout: fixed; }
+        .monthly-table th { background: #f0f0f0; color: #000; padding: 8px 4px; text-align: center; font-weight: 700; border: 1px solid #333; font-size: 0.85rem; }
+        .monthly-table td { padding: 6px 4px; border: 1px solid #333; text-align: center; vertical-align: middle; font-weight: 700; height: 28px; font-size: 0.9rem; }
+        .saved-weeks-list { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+        .saved-week-tag { background: #27ae60; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">جاري معالجة الطلب...</div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <!-- Password Modal for Admin (Locked by default) -->
+    <div class="modal-overlay active" id="adminPasswordModal">
+        <div class="modal-content">
+            <div class="modal-title">🔑 رمز دخول الإدارة</div>
+            <div class="modal-text">الرجاء إدخال رمز المرور للوصول للوحة التحكم:</div>
+            <input type="password" id="adminPasswordInput" class="form-input" style="text-align: center; margin-bottom: 15px;" placeholder="أدخل الرمز" autofocus>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm" onclick="checkAdminPassword()">دخول</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Top Header (Visible after login) -->
+    <div class="top-header" id="adminHeader" style="display: none;">
+        <div class="logo-center">
+            <img src="image.jpeg" alt="شعار التصاريح الأمنية" class="logo-img-top">
+            <div class="logo-text-top">لوحة الإدارة - التصاريح الأمنية</div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="nav-btn primary" onclick="openChangePasswordModal()" style="background: #2980b9;">⚙️ تغيير رمز المرور</button>
+            <a href="index.html" class="nav-btn secondary">📝 تسجيل الحضور</a>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal-content">
+            <div class="modal-title">⚙️ تغيير رمز المرور</div>
+            <div class="modal-text">أدخل رمز المرور الحالي والجديد لتحديثه:</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <input type="password" id="currentPasswordInput" class="form-input" style="text-align: center;" placeholder="رمز المرور الحالي">
+                <input type="password" id="newPasswordInput" class="form-input" style="text-align: center;" placeholder="رمز المرور الجديد">
+                <input type="password" id="confirmNewPasswordInput" class="form-input" style="text-align: center;" placeholder="تأكيد رمز المرور الجديد">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm" onclick="saveNewPasscode()">حفظ الرمز الجديد</button>
+                <button class="modal-btn cancel" onclick="closeChangePasswordModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Container (Visible after login) -->
+    <div class="container" id="adminSection">
+        <div class="form-header">
+            <h2>📊 لوحة تحكم مدير النظام (تراكمي)</h2>
+            <p>متابعة كافة الوحدات والإرسالات المتراكمة</p>
+        </div>
+        <div class="form-container">
+            <!-- Quick Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: center; border-bottom: 4px solid #1e3c72;">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #1e3c72;" id="statTotalSubmissions">0</div>
+                    <div style="font-size: 0.85rem; color: #666; font-weight: 600; margin-top: 5px;">إجمالي التقارير</div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: center; border-bottom: 4px solid #27ae60;">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #27ae60;" id="statTotalUnits">0</div>
+                    <div style="font-size: 0.85rem; color: #666; font-weight: 600; margin-top: 5px;">عدد الوحدات النشطة</div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: center; border-bottom: 4px solid #c41e3a;">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #c41e3a;" id="statTotalWeeks">0</div>
+                    <div style="font-size: 0.85rem; color: #666; font-weight: 600; margin-top: 5px;">الأسابيع المسجلة</div>
+                </div>
+            </div>
+
+            <!-- Export Actions -->
+            <div class="action-buttons">
+                <button class="action-btn" onclick="exportAllToExcel()" style="background: linear-gradient(135deg, #27ae60 0%, #1e7e34 100%); color: white;">
+                    <span>📊</span> تصدير إكسل تراكمي
+                </button>
+                <button class="action-btn" onclick="exportAllToPDF()" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white;">
+                    <span>📄</span> تصدير PDF تراكمي بالعرض
+                </button>
+                <button class="action-btn" onclick="refreshAdminData()" style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white;">
+                    <span>🔄</span> تحديث البيانات
+                </button>
+            </div>
+
+            <!-- Search bar -->
+            <div style="margin-bottom: 15px; position: relative;">
+                <input type="text" id="unitSearchInput" oninput="filterAndRenderTable()" class="form-input" placeholder="🔍 ابحث عن طريق اسم الوحدة أو القسم..." style="padding-right: 15px; font-weight: 600;">
+            </div>
+
+            <!-- Submissions Table -->
+            <div class="table-responsive">
+                <table class="entry-table" id="adminSubmissionsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">ت</th>
+                            <th style="width: 15%">تاريخ الإرسال</th>
+                            <th style="width: 20%">الوحدة/القسم</th>
+                            <th style="width: 25%">الفترة</th>
+                            <th style="width: 15%">المرفق</th>
+                            <th style="width: 20%">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody">
+                        <tr>
+                            <td colspan="6" style="padding: 20px; text-align: center; color: #888;">لا توجد بيانات متراكمة بعد</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail View Modal / Section -->
+    <div class="container" id="detailSection" style="margin-top: 20px; display: none;">
+        <div class="form-header" style="background: #2c3e50;">
+            <h2 id="detailReportTitle">📄 تفاصيل التقرير</h2>
+        </div>
+        <div class="form-container">
+            <div class="action-buttons" style="grid-template-columns: 1fr 1fr 1fr; max-width: 600px; margin-bottom: 15px;">
+                <button class="nav-btn primary" onclick="printDetailReport()" style="padding: 12px; background: #34495e;">🖨️ طباعة</button>
+                <button class="nav-btn primary" onclick="saveDetailReportPDF()" style="padding: 12px; background: #e74c3c;">📄 حفظ PDF بالعرض</button>
+                <button class="nav-btn secondary" onclick="closeDetailReport()" style="padding: 12px;">⬅️ إغلاق التفاصيل</button>
+            </div>
+            
+            <div class="report-container" id="reportContent">
+                <div class="report-header">
+                    <img src="image.jpeg" alt="شعار المتابعة">
+                    <div class="report-title">التقرير الشهري التراكمي</div>
+                    <div class="report-subtitle">قسم التصاريح الأمنية - شعبة المتابعة</div>
+                    <div style="text-align: right; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; padding: 5px 8px; background: #f8f9fa; border-radius: 6px; border-right: 3px solid #1e3c72;" id="detailReportUnit">الوحدة: <span></span></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.9rem;">
+                        <div>الفترة: <span id="detailPeriod"></span></div>
+                        <div>تاريخ التقرير: <span id="detailReportDate"></span></div>
+                    </div>
+                </div>
+                <div id="detailReportWeeksContainer" class="monthly-report"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Template container for HTML2Canvas to generate Cumulative Landscape PDF -->
+    <div class="report-container" id="adminReportContent" style="display: none; background: white; width: 297mm; max-width: 100%; box-sizing: border-box; padding: 20px; direction: rtl;">
+        <div class="report-header" style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #1e3c72; padding-bottom: 10px;">
+            <img src="image.jpeg" alt="شعار المتابعة" style="width: 100px; height: 100px; margin: 0 auto 10px; display: block; object-fit: contain;">
+            <div class="report-title" style="font-size: 1.6rem; font-weight: 700; color: #1e3c72; margin-bottom: 5px;">التقرير التراكمي العام للحضور والغياب</div>
+            <div class="report-subtitle" style="font-size: 1.1rem; color: #333; margin-bottom: 10px;">قسم التصاريح الأمنية - شعبة المتابعة</div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: bold; background: #f8f9fa; padding: 10px 15px; border-radius: 8px;">
+                <div>تاريخ الطباعة: <span id="adminReportPrintDate"></span></div>
+                <div>إجمالي الإدخالات المتراكمة: <span id="adminReportTotalCount">0</span></div>
+            </div>
+        </div>
+        <div id="adminReportTablesContainer"></div>
+        <div style="display: flex; justify-content: flex-start; align-items: center; margin-top: 25px; font-weight: bold; font-size: 0.95rem;">
+            <div>توقيع المشرف: <span style="color: #c41e3a; font-size: 1.1rem;">سامر ستار</span></div>
+        </div>
+    </div>
+
+    <script>
+        let isAdminAuthenticated = false;
+        let allSubmissions = [];
+        const weekNames = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع'];
+        const statusFullNames = {
+            'present': 'حاضر', 'absent': 'غائب', 'holiday': 'عطلة رسمية',
+            'rest': 'عطلة اسبوعية', 'compensation': 'تعويضية', 'tafreeg': 'تفرغ',
+            'tafreeg-taawidi': 'تفريغ تعويضية', 'istiraha': 'استراحة', 'wajib': 'واجب',
+            'egaza': 'اجازة اعتيادية', 'egaza_maradia': 'اجازة مرضية'
+        };
+        const shiftNames = { 'morning': 'صباحي', 'evening': 'مسائي', 'both': 'كلاهما' };
+
+        // IndexedDB Configurations
+        const DB_NAME = 'AttendanceAdminDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'submissions';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = event => reject(event.target.error);
+                request.onsuccess = event => resolve(event.target.result);
+                request.onupgradeneeded = event => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+            });
+        }
+
+        function getAllSubmissionsDB() {
+            return initDB().then(db => {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction([STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            });
+        }
+
+        function deleteSubmissionDB(id) {
+            return initDB().then(db => {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction([STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            });
+        }
+
+        async function checkServerAvailable() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const response = await fetch('/api/submissions', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                return response.ok;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function checkAdminPassword() {
+            const password = document.getElementById('adminPasswordInput').value;
+            const correctPasscode = localStorage.getItem('adminPasscode') || '123456';
+            if (password === correctPasscode) {
+                isAdminAuthenticated = true;
+                document.getElementById('adminPasswordModal').classList.remove('active');
+                document.getElementById('adminHeader').style.display = 'flex';
+                document.getElementById('adminSection').classList.add('active');
+                refreshAdminData();
+                showToast('🔑 تم تسجيل الدخول بنجاح');
+            } else {
+                showToast('❌ رمز المرور خاطئ!');
+            }
+        }
+
+        async function refreshAdminData() {
+            showLoading(true);
+            try {
+                const serverAvailable = await checkServerAvailable();
+                if (serverAvailable) {
+                    const response = await fetch('/api/submissions');
+                    const resData = await response.json();
+                    allSubmissions = resData.data || [];
+                } else {
+                    allSubmissions = await getAllSubmissionsDB();
+                }
+
+                document.getElementById('statTotalSubmissions').textContent = allSubmissions.length;
+                
+                const uniqueUnits = new Set(allSubmissions.map(s => s.unitName));
+                document.getElementById('statTotalUnits').textContent = uniqueUnits.size;
+
+                let totalWeeks = 0;
+                allSubmissions.forEach(s => {
+                    if (s.weeks) totalWeeks += Object.keys(s.weeks).length;
+                });
+                document.getElementById('statTotalWeeks').textContent = totalWeeks;
+
+                // Render with current filter
+                filterAndRenderTable();
+
+            } catch (err) {
+                console.error(err);
+                showToast('❌ فشل تحميل البيانات');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function filterAndRenderTable() {
+            const searchQuery = document.getElementById('unitSearchInput').value.trim().toLowerCase();
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = '';
+
+            const filteredSubmissions = allSubmissions.filter(sub => {
+                return !searchQuery || (sub.unitName && sub.unitName.toLowerCase().includes(searchQuery));
+            });
+
+            if (filteredSubmissions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: #888;">لا توجد نتائج مطابقة للبحث</td></tr>`;
+                return;
+            }
+
+            filteredSubmissions.sort((a, b) => b.id - a.id);
+
+            filteredSubmissions.forEach((sub, index) => {
+                const row = document.createElement('tr');
+                const dateStr = new Date(sub.submittedAt || sub.id).toLocaleString('ar-SA');
+                const periodStr = `${sub.startDate} إلى ${sub.endDate}`;
+                
+                let attachmentHtml = '<span style="color: #999;">لا يوجد</span>';
+                if (sub.attachment) {
+                    if (sub.attachment.path) {
+                        attachmentHtml = `<a href="${sub.attachment.path}" target="_blank" class="nav-btn primary" style="padding: 4px 10px; font-size: 0.75rem; text-decoration: none;">📥 تحميل PDF</a>`;
+                    } else if (sub.attachment.blob) {
+                        attachmentHtml = `<button onclick="downloadOfflineAttachment(${sub.id})" class="nav-btn primary" style="padding: 4px 10px; font-size: 0.75rem;">📥 تحميل PDF</button>`;
+                    }
+                }
+
+                const weeksList = Object.keys(sub.weeks).map(w => weekNames[parseInt(w) - 1]).join('، ');
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${dateStr}</td>
+                    <td style="font-weight: bold; color: #1e3c72;">${sub.unitName}</td>
+                    <td>${periodStr}<br><small style="color: #666;">(${weeksList})</small></td>
+                    <td>${attachmentHtml}</td>
+                    <td>
+                        <div style="display: flex; gap: 5px; justify-content: center;">
+                            <button class="nav-btn secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick='viewSubmissionDetails(${JSON.stringify(sub).replace(/'/g, "&apos;")})'>👁️ عرض</button>
+                            <button class="nav-btn danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteSubmission(${sub.id})">🗑️ حذف</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function downloadOfflineAttachment(id) {
+            try {
+                const submissions = await getAllSubmissionsDB();
+                const sub = submissions.find(s => s.id === id);
+                if (sub && sub.attachment && sub.attachment.blob) {
+                    const url = URL.createObjectURL(sub.attachment.blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = sub.attachment.originalName || 'attachment.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('✅ تم تحميل المرفق');
+                }
+            } catch (e) {
+                showToast('❌ خطأ في التحميل');
+            }
+        }
+
+        async function deleteSubmission(id) {
+            if (!confirm('هل أنت متأكد من الحذف نهائياً؟')) return;
+            showLoading(true);
+            try {
+                const serverAvailable = await checkServerAvailable();
+                if (serverAvailable) {
+                    await fetch(`/api/submissions/${id}`, { method: 'DELETE' });
+                } else {
+                    await deleteSubmissionDB(id);
+                }
+                showToast('✅ تم الحذف بنجاح');
+                refreshAdminData();
+            } catch (e) {
+                showToast('❌ فشل الحذف');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function gregorianToHijri(date) {
+            const m = moment(date);
+            const hijriDate = m.format('iYYYY/iMM/iDD');
+            const hijriMonth = m.format('iMMMM');
+            const hijriYear = m.format('iYYYY');
+            return {
+                full: hijriDate,
+                display: m.format('iDD') + ' ' + hijriMonth + ' ' + hijriYear + ' هـ',
+                year: parseInt(m.format('iYYYY')),
+                month: parseInt(m.format('iMM')),
+                day: parseInt(m.format('iDD'))
+            };
+        }
+
+        function viewSubmissionDetails(sub) {
+            document.getElementById('detailReportUnit').querySelector('span').textContent = sub.unitName;
+            
+            const startHijri = gregorianToHijri(sub.startDate);
+            const endHijri = gregorianToHijri(sub.endDate);
+            document.getElementById('detailPeriod').textContent = `${sub.startDate} (${startHijri.display}) إلى ${sub.endDate} (${endHijri.display})`;
+            document.getElementById('detailReportDate').textContent = new Date(sub.submittedAt || sub.id).toLocaleDateString('ar-SA');
+            
+            const container = document.getElementById('detailReportWeeksContainer');
+            container.innerHTML = '';
+            
+            Object.values(sub.weeks).forEach(week => {
+                const weekDiv = document.createElement('div');
+                weekDiv.className = 'monthly-week';
+                
+                const weekHijri = gregorianToHijri(week.startDate);
+                const weekEndHijri = gregorianToHijri(week.endDate);
+                
+                const weekHeader = document.createElement('div');
+                weekHeader.className = 'week-header';
+                weekHeader.style.background = '#c41e3a';
+                weekHeader.innerHTML = `<span>${weekNames[week.weekNumber-1]}</span><span class="week-date">${week.startDate} (${weekHijri.display}) - ${week.endDate} (${weekEndHijri.display})</span>`;
+                weekDiv.appendChild(weekHeader);
+                
+                const table = document.createElement('table');
+                table.className = 'monthly-table';
+                
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr style="background:#f0f0f0;">
+                        <th style="width:4%;">ت</th>
+                        <th style="width:20%;">الاسم الثلاثي</th>
+                        <th>السبت</th><th>الأحد</th><th>الإثنين</th><th>الثلاثاء</th><th>الأربعاء</th><th>الخميس</th><th>الجمعة</th>
+                        <th style="width:12%;">الدوام</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+                
+                const tbody = document.createElement('tbody');
+                week.employees.forEach(emp => {
+                    const tr = document.createElement('tr');
+                    let statusHtml = '';
+                    emp.days.forEach(day => {
+                        statusHtml += `<td style="color:${getStatusColor(day)};">${statusFullNames[day] || day}</td>`;
+                    });
+                    
+                    tr.innerHTML = `
+                        <td>${emp.id}</td>
+                        <td style="font-weight:bold;">${emp.name}</td>
+                        ${statusHtml}
+                        <td style="color:${getShiftColor(emp.shift || 'morning')};">${shiftNames[emp.shift || 'morning'] || 'صباحي'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                weekDiv.appendChild(table);
+                
+                if (week.notes) {
+                    const note = document.createElement('div');
+                    note.style.padding = '8px';
+                    note.style.background = '#fffbeb';
+                    note.style.border = '1px solid #f59e0b';
+                    note.style.fontSize = '0.85rem';
+                    note.innerHTML = `📌 <b>ملاحظات:</b> ${week.notes}`;
+                    weekDiv.appendChild(note);
+                }
+                
+                container.appendChild(weekDiv);
+            });
+            
+            document.getElementById('detailSection').style.display = 'block';
+            document.getElementById('detailSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function saveDetailReportPDF() {
+            showLoading(true);
+            showToast('⏳ جاري إنشاء ملف PDF...');
+            try {
+                const { jsPDF } = window.jspdf;
+                const reportContent = document.getElementById('reportContent');
+
+                // Create a temporary clone with supervisor signature
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = reportContent.innerHTML;
+                tempDiv.style.width = '100%';
+                tempDiv.style.maxWidth = '277mm';
+                tempDiv.style.backgroundColor = '#ffffff';
+                tempDiv.style.padding = '20px';
+                tempDiv.style.boxSizing = 'border-box';
+                tempDiv.style.direction = 'rtl';
+                tempDiv.style.overflow = 'hidden';
+
+                // Add supervisor signature in the footer
+                const footerDiv = document.createElement('div');
+                footerDiv.style.display = 'flex';
+                footerDiv.style.justifyContent = 'flex-start';
+                footerDiv.style.alignItems = 'center';
+                footerDiv.style.marginTop = '25px';
+                footerDiv.style.paddingTop = '15px';
+                footerDiv.style.fontFamily = "'Cairo', sans-serif";
+                footerDiv.style.fontSize = '14px';
+                footerDiv.style.fontWeight = 'bold';
+                footerDiv.style.color = '#333';
+                footerDiv.innerHTML = '<div>توقيع المشرف: <span style=\'color: #c41e3a; font-size: 16px;\'>سامر ستار</span></div>';
+                tempDiv.appendChild(footerDiv);
+
+                document.body.appendChild(tempDiv);
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '0';
+
+                const canvas = await html2canvas(tempDiv, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    windowWidth: 1123,
+                    windowHeight: 794,
+                    logging: false
+                });
+
+                document.body.removeChild(tempDiv);
+
+                const imgData = canvas.toDataURL('image/png');
+
+                // Landscape A4 PDF configuration
+                const margin = 8;
+                const pdfWidth = 297;
+                const pdfHeight = 210;
+                const contentWidth = pdfWidth - (margin * 2);
+                const contentHeight = pdfHeight - (margin * 2);
+
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+
+                const ratioX = contentWidth / imgWidth;
+                const ratioY = contentHeight / imgHeight;
+                const ratio = Math.min(ratioX, ratioY);
+
+                const scaledWidth = imgWidth * ratio;
+                const scaledHeight = imgHeight * ratio;
+
+                const imgX = margin + (contentWidth - scaledWidth) / 2;
+                const imgY = margin + (contentHeight - scaledHeight) / 2;
+
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
+                
+                const unitSpan = reportContent.querySelector('#detailReportUnit span');
+                const unitName = unitSpan ? unitSpan.textContent : 'report';
+                const safeUnitName = unitName.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+                pdf.save(`تقرير_حضور_${safeUnitName}_${new Date().toISOString().split('T')[0]}.pdf`);
+                showToast('✅ تم حفظ ملف PDF بنجاح');
+            } catch (error) {
+                console.error('PDF Error:', error);
+                showToast('❌ فشل إنشاء ملف PDF');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function closeDetailReport() {
+            document.getElementById('detailSection').style.display = 'none';
+        }
+
+        function printDetailReport() {
+            window.print();
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'present': '#27ae60', 'absent': '#e74c3c', 'holiday': '#3498db',
+                'rest': '#f39c12', 'compensation': '#9b59b6', 'tafreeg': '#1abc9c',
+                'tafreeg-taawidi': '#fdcb6e', 'istiraha': '#636e72', 'wajib': '#0984e3',
+                'egaza': '#8e44ad', 'egaza_maradia': '#c0392b'
+            };
+            return colors[status] || '#000';
+        }
+
+        function getShiftColor(shift) {
+            const colors = { 'morning': '#856404', 'evening': '#0c5460', 'both': '#155724' };
+            return colors[shift] || '#000';
+        }
+
+        async function exportAllToExcel() {
+            showLoading(true);
+            try {
+                const searchQuery = document.getElementById('unitSearchInput').value.trim().toLowerCase();
+                const submissions = allSubmissions.filter(sub => {
+                    return !searchQuery || (sub.unitName && sub.unitName.toLowerCase().includes(searchQuery));
+                });
+
+                if (submissions.length === 0) {
+                    showToast('❌ لا توجد بيانات لتصديرها');
+                    showLoading(false);
+                    return;
+                }
+
+                // Group entries by week number (1 to 4)
+                const weeksGroup = { 1: [], 2: [], 3: [], 4: [] };
+                submissions.sort((a, b) => a.id - b.id);
+
+                submissions.forEach(sub => {
+                    const submittedAt = new Date(sub.submittedAt || sub.id).toLocaleString('ar-SA');
+                    Object.values(sub.weeks).forEach(week => {
+                        const weekNum = week.weekNumber;
+                        if (weeksGroup[weekNum]) {
+                            week.employees.forEach(emp => {
+                                weeksGroup[weekNum].push({
+                                    submittedAt: submittedAt,
+                                    unitName: sub.unitName,
+                                    startDate: week.startDate,
+                                    endDate: week.endDate,
+                                    name: emp.name,
+                                    shift: emp.shift || 'morning',
+                                    days: emp.days,
+                                    notes: week.notes || ''
+                                });
+                            });
+                        }
+                    });
+                });
+
+                const wb = XLSX.utils.book_new();
+                let sheetsAdded = 0;
+
+                // Loop through weeks and create separate sheets
+                for (let wNum = 1; wNum <= 4; wNum++) {
+                    const employees = weeksGroup[wNum];
+                    if (employees.length === 0) continue;
+
+                    const excelData = [[
+                        'ت', 'تاريخ الإرسال', 'الوحدة/القسم', 'الأسبوع', 'بداية الأسبوع', 'نهاية الأسبوع',
+                        'الاسم الثلاثي', 'حالة الدوام', 'السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'ملاحظات'
+                    ]];
+
+                    employees.forEach((emp, idx) => {
+                        excelData.push([
+                            idx + 1,
+                            emp.submittedAt,
+                            emp.unitName,
+                            weekNames[wNum - 1],
+                            emp.startDate,
+                            emp.endDate,
+                            emp.name,
+                            shiftNames[emp.shift] || 'صباحي',
+                            statusFullNames[emp.days[0]] || emp.days[0],
+                            statusFullNames[emp.days[1]] || emp.days[1],
+                            statusFullNames[emp.days[2]] || emp.days[2],
+                            statusFullNames[emp.days[3]] || emp.days[3],
+                            statusFullNames[emp.days[4]] || emp.days[4],
+                            statusFullNames[emp.days[5]] || emp.days[5],
+                            statusFullNames[emp.days[6]] || emp.days[6],
+                            emp.notes
+                        ]);
+                    });
+
+                    const ws = XLSX.utils.aoa_to_sheet(excelData);
+                    ws['!dir'] = 'rtl';
+                    XLSX.utils.book_append_sheet(wb, ws, weekNames[wNum - 1]);
+                    sheetsAdded++;
+                }
+
+                if (sheetsAdded === 0) {
+                    showToast('❌ لا توجد بيانات لتصديرها');
+                    showLoading(false);
+                    return;
+                }
+
+                XLSX.writeFile(wb, `التقرير_التراكمي_${new Date().toISOString().split('T')[0]}.xlsx`);
+                showToast('✅ تم تصدير Excel بنجاح (كل أسبوع في صفحة)');
+            } catch (err) {
+                console.error(err);
+                showToast('❌ فشل تصدير Excel');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function exportAllToPDF() {
+            showLoading(true);
+            try {
+                const searchQuery = document.getElementById('unitSearchInput').value.trim().toLowerCase();
+                const submissions = allSubmissions.filter(sub => {
+                    return !searchQuery || (sub.unitName && sub.unitName.toLowerCase().includes(searchQuery));
+                });
+
+                if (submissions.length === 0) {
+                    showToast('❌ لا توجد بيانات لتصديرها');
+                    showLoading(false);
+                    return;
+                }
+
+                // Group entries by week number (1 to 4)
+                const weeksGroup = { 1: [], 2: [], 3: [], 4: [] };
+                let totalEmployeesCount = 0;
+
+                submissions.sort((a, b) => a.id - b.id);
+
+                submissions.forEach(sub => {
+                    Object.values(sub.weeks).forEach(week => {
+                        const weekNum = week.weekNumber;
+                        if (weeksGroup[weekNum]) {
+                            week.employees.forEach(emp => {
+                                weeksGroup[weekNum].push({
+                                    unitName: sub.unitName,
+                                    name: emp.name,
+                                    days: emp.days,
+                                    shift: emp.shift || 'morning',
+                                    startDate: week.startDate,
+                                    endDate: week.endDate
+                                });
+                                totalEmployeesCount++;
+                            });
+                        }
+                    });
+                });
+
+                // Clear previous tables
+                const container = document.getElementById('adminReportTablesContainer');
+                container.innerHTML = '';
+
+                // Build a separate table for each week that has data
+                let tableIndex = 1;
+                for (let wNum = 1; wNum <= 4; wNum++) {
+                    const employees = weeksGroup[wNum];
+                    if (employees.length === 0) continue;
+
+                    // Header for this week's table
+                    const weekTitle = document.createElement('div');
+                    weekTitle.style.background = '#1e3c72';
+                    weekTitle.style.color = '#ffffff';
+                    weekTitle.style.padding = '8px 12px';
+                    weekTitle.style.fontWeight = 'bold';
+                    weekTitle.style.fontSize = '1.05rem';
+                    weekTitle.style.borderRadius = '6px 6px 0 0';
+                    weekTitle.style.marginTop = tableIndex > 1 ? '20px' : '0';
+                    weekTitle.style.display = 'flex';
+                    weekTitle.style.justifyContent = 'space-between';
+                    
+                    // Period range from the first record
+                    const periodStr = `${employees[0].startDate} - ${employees[0].endDate}`;
+                    weekTitle.innerHTML = `<span>📋 ${weekNames[wNum - 1]}</span><span>📅 الفترة: ${periodStr}</span>`;
+                    container.appendChild(weekTitle);
+
+                    // Table wrapper
+                    const tableWrapper = document.createElement('div');
+                    tableWrapper.className = 'table-responsive';
+                    tableWrapper.style.margin = '0 0 15px 0';
+                    
+                    const table = document.createElement('table');
+                    table.className = 'monthly-table';
+                    table.style.width = '100%';
+                    table.style.borderCollapse = 'collapse';
+                    table.style.fontSize = '0.72rem';
+                    table.style.tableLayout = 'fixed';
+
+                    table.innerHTML = `
+                        <thead>
+                            <tr style="background: #f0f0f0; color: #333;">
+                                <th style="width: 4%; border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">ت</th>
+                                <th style="width: 16%; border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الوحدة/القسم</th>
+                                <th style="width: 22%; border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الاسم الثلاثي</th>
+                                <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">السبت</th>
+                                <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الأحد</th>
+                                <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الإثنين</th>
+                                <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الثلاثاء</th>
+                                <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الأربعاء</th>
+                                <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الخميس</th>
+                                <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الجمعة</th>
+                                <th style="width: 10%; border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الدوام</th>
+                            </tr>
+                        </thead>
+                    `;
+
+                    const tbody = document.createElement('tbody');
+                    employees.forEach((emp, empIdx) => {
+                        const tr = document.createElement('tr');
+                        
+                        let statusTds = '';
+                        emp.days.forEach(day => {
+                            statusTds += `<td style="border: 1px solid #333; padding: 4px 2px; text-align: center; color: ${getStatusColor(day)}; font-weight: bold;">${statusFullNames[day] || day}</td>`;
+                        });
+
+                        tr.innerHTML = `
+                            <td style="border: 1px solid #333; text-align: center; padding: 4px 2px;">${empIdx + 1}</td>
+                            <td style="border: 1px solid #333; text-align: center; font-weight: bold; color: #1e3c72; padding: 4px 2px; word-wrap: break-word; overflow: hidden;">${emp.unitName}</td>
+                            <td style="border: 1px solid #333; text-align: center; padding: 4px 2px; word-wrap: break-word; overflow: hidden;">${emp.name}</td>
+                            ${statusTds}
+                            <td style="border: 1px solid #333; text-align: center; font-weight: bold; color: ${getShiftColor(emp.shift)}; padding: 4px 2px;">${shiftNames[emp.shift] || 'صباحي'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    table.appendChild(tbody);
+                    tableWrapper.appendChild(table);
+                    container.appendChild(tableWrapper);
+                    tableIndex++;
+                }
+
+                // Update info cards
+                document.getElementById('adminReportPrintDate').textContent = new Date().toLocaleString('ar-SA');
+                document.getElementById('adminReportTotalCount').textContent = totalEmployeesCount;
+
+                // Temporarily render container
+                const rep = document.getElementById('adminReportContent');
+                rep.style.display = 'block';
+                rep.style.position = 'absolute';
+                rep.style.left = '-9999px';
+                rep.style.width = '297mm';
+
+                await new Promise(resolve => setTimeout(resolve, 300));
+                const canvas = await html2canvas(rep, { scale: 2, useCORS: true, backgroundColor: '#fff', windowWidth: 1123, windowHeight: 794 });
+                rep.style.display = 'none';
+
+                const img = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                
+                const margin = 8;
+                const ratio = Math.min(281 / canvas.width, 194 / canvas.height);
+                pdf.addImage(img, 'PNG', margin + (281 - canvas.width * ratio)/2, margin + (194 - canvas.height * ratio)/2, canvas.width * ratio, canvas.height * ratio);
+                pdf.save(`التقرير_التراكمي_${new Date().toISOString().split('T')[0]}.pdf`);
+                showToast('✅ تم تصدير PDF بنجاح');
+            } catch (err) {
+                console.error(err);
+                showToast('❌ فشل تصدير PDF');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) { document.getElementById('loadingOverlay').classList.toggle('active', show); }
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function openChangePasswordModal() {
+            document.getElementById('currentPasswordInput').value = '';
+            document.getElementById('newPasswordInput').value = '';
+            document.getElementById('confirmNewPasswordInput').value = '';
+            document.getElementById('changePasswordModal').classList.add('active');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('active');
+        }
+
+        function saveNewPasscode() {
+            const currentPass = document.getElementById('currentPasswordInput').value;
+            const newPass = document.getElementById('newPasswordInput').value.trim();
+            const confirmNewPass = document.getElementById('confirmNewPasswordInput').value.trim();
+
+            const correctPasscode = localStorage.getItem('adminPasscode') || '123456';
+
+            if (currentPass !== correctPasscode) {
+                showToast('❌ رمز المرور الحالي غير صحيح!');
+                return;
+            }
+
+            if (newPass === '') {
+                showToast('❌ لا يمكن أن يكون رمز المرور فارغاً!');
+                return;
+            }
+
+            if (newPass !== confirmNewPass) {
+                showToast('❌ رمز المرور الجديد وتأكيده غير متطابقين!');
+                return;
+            }
+
+            localStorage.setItem('adminPasscode', newPass);
+            showToast('✅ تم تغيير رمز المرور بنجاح');
+            closeChangePasswordModal();
+        }
+
+        document.getElementById('adminPasswordInput').addEventListener('keyup', e => { if (e.key === 'Enter') checkAdminPassword(); });
+        window.addEventListener('DOMContentLoaded', () => { initDB().catch(console.error); moment.locale('ar'); });
+    </script>
+</body>
+</html>
