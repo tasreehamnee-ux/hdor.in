@@ -292,7 +292,7 @@
         async function checkServerAvailable() {
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
                 const response = await fetch('/api/submissions', { signal: controller.signal });
                 clearTimeout(timeoutId);
                 return response.ok;
