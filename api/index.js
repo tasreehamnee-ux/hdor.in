@@ -241,10 +241,16 @@ app.delete('/api/submissions', async (req, res) => {
 
 // Route to inspect environment variable state
 app.get('/api/test-env', (req, res) => {
+  const rawUri = process.env.MONGODB_URI;
+  let maskedUri = 'undefined';
+  if (rawUri !== undefined) {
+    maskedUri = rawUri.replace(/[a-zA-Z0-9]/g, '*');
+  }
   res.json({
-    mongodbUriDefined: !!process.env.MONGODB_URI,
-    mongodbUriLength: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
-    mongodbUriPrefix: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 15) : 'none',
+    mongodbUriDefined: !!rawUri,
+    mongodbUriLength: rawUri ? rawUri.length : 0,
+    mongodbUriType: typeof rawUri,
+    mongodbUriMasked: maskedUri,
     allEnvKeys: Object.keys(process.env)
   });
 });
