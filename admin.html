@@ -328,13 +328,32 @@
                     allSubmissions = await getAllSubmissionsDB();
                 }
 
-                // Safety Parse: Ensure sub.weeks is a parsed object
+                // Safety Parse: Ensure sub.weeks is a parsed object and does not contain nulls
                 allSubmissions.forEach(sub => {
-                    if (sub && typeof sub.weeks === 'string') {
-                        try {
-                            sub.weeks = JSON.parse(sub.weeks);
-                        } catch (e) {
-                            console.error('Error parsing sub.weeks:', e);
+                    if (sub) {
+                        if (typeof sub.weeks === 'string') {
+                            try {
+                                sub.weeks = JSON.parse(sub.weeks);
+                            } catch (e) {
+                                console.error('Error parsing sub.weeks:', e);
+                                sub.weeks = {};
+                            }
+                        }
+                        
+                        // Clean up nulls and convert numeric index array to clean object
+                        if (sub.weeks && typeof sub.weeks === 'object') {
+                            const cleanWeeks = {};
+                            Object.keys(sub.weeks).forEach(key => {
+                                const val = sub.weeks[key];
+                                if (val !== null && val !== undefined) {
+                                    const parsedKey = parseInt(key);
+                                    if (!isNaN(parsedKey)) {
+                                        cleanWeeks[parsedKey] = val;
+                                    }
+                                }
+                            });
+                            sub.weeks = cleanWeeks;
+                        } else {
                             sub.weeks = {};
                         }
                     }
