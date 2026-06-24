@@ -244,7 +244,8 @@ app.get('/api/test-env', (req, res) => {
   res.json({
     mongodbUriDefined: !!process.env.MONGODB_URI,
     mongodbUriLength: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
-    mongodbUriPrefix: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 15) : 'none'
+    mongodbUriPrefix: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 15) : 'none',
+    allEnvKeys: Object.keys(process.env)
   });
 });
 
