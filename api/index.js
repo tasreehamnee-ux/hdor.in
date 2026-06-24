@@ -33,10 +33,23 @@ let submissionsCollection = null;
 const DB_NAME = 'AttendanceDB';
 const COLLECTION_NAME = 'submissions';
 
-// Firebase configurations
+// Firebase configurations (SDK mode)
 let firestoreDb = null;
 let realtimeDb = null;
 let storageBucket = null;
+
+// Firebase configurations (REST mode)
+const FIREBASE_DB_URL = process.env.FIREBASE_DATABASE_URL;
+const FIREBASE_DB_SECRET = process.env.FIREBASE_DATABASE_SECRET;
+
+// Helper to construct Firebase REST URL
+function getFirebaseRestUrl(path) {
+  let url = `${FIREBASE_DB_URL}/${path}.json`;
+  if (FIREBASE_DB_SECRET) {
+    url += `?auth=${FIREBASE_DB_SECRET}`;
+  }
+  return url;
+}
 
 // Database file path for local fallback
 const DB_FILE = path.join(__dirname, '../submissions.json');
@@ -45,7 +58,7 @@ const DB_FILE = path.join(__dirname, '../submissions.json');
 async function initDatabase() {
   if (dbInitialized) return;
 
-  // 1. Try Firebase first (Firestore or Realtime Database)
+  // 1. Try Firebase SDK mode first (Firestore or Realtime Database via Service Account)
   if (process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_PRIVATE_KEY) {
     try {
       const admin = require('firebase-admin');
@@ -72,7 +85,6 @@ async function initDatabase() {
           config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
         }
         
-        // If databaseURL is set or if we use RTDB
         const rtdbUrl = process.env.FIREBASE_DATABASE_URL || `https://${projectId}-default-rtdb.firebaseio.com`;
         config.databaseURL = rtdbUrl;
         
@@ -83,11 +95,11 @@ async function initDatabase() {
       if (process.env.FIREBASE_DATABASE_URL || process.env.FIREBASE_USE_RTDB === 'true') {
         realtimeDb = admin.database();
         activeDbType = DB_TYPE.FIREBASE_RTDB;
-        console.log('Firebase Realtime Database initialized successfully.');
+        console.log('Firebase Realtime Database (SDK Mode) initialized successfully.');
       } else {
         firestoreDb = admin.firestore();
         activeDbType = DB_TYPE.FIREBASE_FIRESTORE;
-        console.log('Firebase Firestore initialized successfully.');
+        console.log('Firebase Firestore (SDK Mode) initialized successfully.');
       }
       
       if (process.env.FIREBASE_STORAGE_BUCKET) {
@@ -97,12 +109,19 @@ async function initDatabase() {
       dbInitialized = true;
       return;
     } catch (err) {
-      console.error('Failed to initialize Firebase:', err);
-      throw err; // Fail loudly in production
+      console.error('Failed to initialize Firebase SDK, falling back to REST/MongoDB:', err);
     }
   }
 
-  // 2. Try MongoDB Atlas next
+  // 2. Try Firebase REST mode (Realtime Database without Service Account Key)
+  if (FIREBASE_DB_URL) {
+    activeDbType = DB_TYPE.FIREBASE_RTDB;
+    console.log('Firebase Realtime Database (REST Mode) active.');
+    dbInitialized = true;
+    return;
+  }
+
+  // 3. Try MongoDB Atlas next
   if (process.env.MONGODB_URI) {
     try {
       dbClient = new MongoClient(process.env.MONGODB_URI);
@@ -119,7 +138,7 @@ async function initDatabase() {
     }
   }
 
-  // 3. Fallback to Local JSON
+  // 4. Fallback to Local JSON
   activeDbType = DB_TYPE.LOCAL;
   console.log('Using Local JSON File fallback.');
   dbInitialized = true;
@@ -140,12 +159,31 @@ async function getAllSubmissions() {
   }
   
   if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
-    const snapshot = await realtimeDb.ref(COLLECTION_NAME).once('value');
-    const val = snapshot.val();
-    if (!val) return [];
-    const list = Object.values(val);
-    list.sort((a, b) => b.id - a.id);
-    return list;
+    if (realtimeDb) {
+      // SDK mode
+      const snapshot = await realtimeDb.ref(COLLECTION_NAME).once('value');
+      const val = snapshot.val();
+      if (!val) return [];
+      const list = Object.values(val);
+      list.sort((a, b) => b.id - a.id);
+      return list;
+    }
+    
+    // REST mode
+    try {
+      const response = await fetch(getFirebaseRestUrl(COLLECTION_NAME));
+      if (!response.ok) {
+        throw new Error(`Firebase REST error: ${response.status} ${response.statusText}`);
+      }
+      const val = await response.json();
+      if (!val) return [];
+      const list = Object.values(val);
+      list.sort((a, b) => b.id - a.id);
+      return list;
+    } catch (err) {
+      console.error('Error fetching from Firebase RTDB REST:', err);
+      throw err;
+    }
   }
   
   if (activeDbType === DB_TYPE.MONGODB) {
@@ -176,8 +214,23 @@ async function getSubmissionById(id) {
   }
   
   if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
-    const snapshot = await realtimeDb.ref(`${COLLECTION_NAME}/${id}`).once('value');
-    return snapshot.val();
+    if (realtimeDb) {
+      // SDK mode
+      const snapshot = await realtimeDb.ref(`${COLLECTION_NAME}/${id}`).once('value');
+      return snapshot.val();
+    }
+    
+    // REST mode
+    try {
+      const response = await fetch(getFirebaseRestUrl(`${COLLECTION_NAME}/${id}`));
+      if (!response.ok) {
+        throw new Error(`Firebase REST error: ${response.status} ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching submission from Firebase RTDB REST:', err);
+      throw err;
+    }
   }
   
   if (activeDbType === DB_TYPE.MONGODB) {
@@ -197,8 +250,27 @@ async function saveSubmission(submission) {
   }
   
   if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
-    await realtimeDb.ref(`${COLLECTION_NAME}/${submission.id}`).set(submission);
-    return;
+    if (realtimeDb) {
+      // SDK mode
+      await realtimeDb.ref(`${COLLECTION_NAME}/${submission.id}`).set(submission);
+      return;
+    }
+    
+    // REST mode
+    try {
+      const response = await fetch(getFirebaseRestUrl(`${COLLECTION_NAME}/${submission.id}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submission)
+      });
+      if (!response.ok) {
+        throw new Error(`Firebase REST error: ${response.status} ${response.statusText}`);
+      }
+      return;
+    } catch (err) {
+      console.error('Error saving submission to Firebase RTDB REST:', err);
+      throw err;
+    }
   }
   
   if (activeDbType === DB_TYPE.MONGODB) {
@@ -223,11 +295,32 @@ async function deleteSubmission(id) {
   }
   
   if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
-    const ref = realtimeDb.ref(`${COLLECTION_NAME}/${id}`);
-    const snapshot = await ref.once('value');
-    if (!snapshot.exists()) return false;
-    await ref.remove();
-    return true;
+    if (realtimeDb) {
+      // SDK mode
+      const ref = realtimeDb.ref(`${COLLECTION_NAME}/${id}`);
+      const snapshot = await ref.once('value');
+      if (!snapshot.exists()) return false;
+      await ref.remove();
+      return true;
+    }
+    
+    // REST mode
+    try {
+      const checkResponse = await fetch(getFirebaseRestUrl(`${COLLECTION_NAME}/${id}`));
+      const val = await checkResponse.json();
+      if (!val) return false;
+      
+      const response = await fetch(getFirebaseRestUrl(`${COLLECTION_NAME}/${id}`), {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error(`Firebase REST error: ${response.status} ${response.statusText}`);
+      }
+      return true;
+    } catch (err) {
+      console.error('Error deleting submission from Firebase RTDB REST:', err);
+      throw err;
+    }
   }
   
   if (activeDbType === DB_TYPE.MONGODB) {
@@ -257,8 +350,25 @@ async function clearAllSubmissions() {
   }
   
   if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
-    await realtimeDb.ref(COLLECTION_NAME).remove();
-    return;
+    if (realtimeDb) {
+      // SDK mode
+      await realtimeDb.ref(COLLECTION_NAME).remove();
+      return;
+    }
+    
+    // REST mode
+    try {
+      const response = await fetch(getFirebaseRestUrl(COLLECTION_NAME), {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error(`Firebase REST error: ${response.status} ${response.statusText}`);
+      }
+      return;
+    } catch (err) {
+      console.error('Error clearing database in Firebase RTDB REST:', err);
+      throw err;
+    }
   }
   
   if (activeDbType === DB_TYPE.MONGODB) {
