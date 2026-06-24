@@ -923,6 +923,7 @@
             showLoading(true);
             showToast('⏳ جاري إعداد ملف PDF للإرسال...');
             try {
+                generateMonthlyReportView(); // Populate template first
                 const { pdf } = await generateReportPDF();
                 const pdfBlob = pdf.output('blob');
                 const safeUnitName = (monthlyData.unitName || 'tasreeh').replace(/[^a-zA-Z0-9]/g, '_');
@@ -1048,6 +1049,7 @@
             showLoading(true);
             showToast('⏳ جاري إنشاء ملف PDF...');
             try {
+                generateMonthlyReportView(); // Populate template first
                 const { pdf } = await generateReportPDF();
                 const safeUnitName = (monthlyData.unitName || 'tasreeh').replace(/[^a-zA-Z0-9]/g, '_');
                 const fileName = 'attendance_report_' + safeUnitName + '_' + new Date().toISOString().split('T')[0] + '.pdf';
@@ -1229,6 +1231,7 @@
                 }
 
                 try {
+                    generateMonthlyReportView(); // Populate template first
                     const { pdf } = await generateReportPDF();
                     const safeUnitName = (monthlyData.unitName || 'tasreeh').replace(/[^a-zA-Z0-9]/g, '_');
                     const fileName = 'نسخة_حفظ_الحضور_' + safeUnitName + '_' + new Date().toISOString().split('T')[0] + '.pdf';
