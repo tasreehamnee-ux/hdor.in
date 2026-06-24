@@ -239,6 +239,15 @@ app.delete('/api/submissions', async (req, res) => {
   }
 });
 
+// Route to inspect environment variable state
+app.get('/api/test-env', (req, res) => {
+  res.json({
+    mongodbUriDefined: !!process.env.MONGODB_URI,
+    mongodbUriLength: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
+    mongodbUriPrefix: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 15) : 'none'
+  });
+});
+
 // Route to serve admin panel directly (for local environment)
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin.html'));
