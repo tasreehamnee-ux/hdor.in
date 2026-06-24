@@ -16,67 +16,209 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Serve static files from root directory (for local environment)
 app.use(express.static(path.join(__dirname, '..')));
 
-// MongoDB Configurations
-const MONGODB_URI = process.env.MONGODB_URI;
+// Database Types
+const DB_TYPE = {
+  FIREBASE: 'firebase',
+  MONGODB: 'mongodb',
+  LOCAL: 'local'
+};
+
+let activeDbType = DB_TYPE.LOCAL;
+let dbInitialized = false;
+
+// MongoDB configurations
+let dbClient = null;
+let submissionsCollection = null;
 const DB_NAME = 'AttendanceDB';
 const COLLECTION_NAME = 'submissions';
 
-let dbClient = null;
-let submissionsCollection = null;
+// Firebase configurations
+let firestoreDb = null;
+let storageBucket = null;
 
-async function connectToDatabase() {
-  if (submissionsCollection) return submissionsCollection;
-  
-  if (MONGODB_URI) {
+// Database file path for local fallback
+const DB_FILE = path.join(__dirname, '../submissions.json');
+
+// Initialize database connection based on environment variables
+async function initDatabase() {
+  if (dbInitialized) return;
+
+  // 1. Try Firebase Firestore first
+  if (process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_PRIVATE_KEY) {
     try {
-      dbClient = new MongoClient(MONGODB_URI);
+      const admin = require('firebase-admin');
+      
+      // Prevent initializing multiple apps in development/hot-reloads
+      if (admin.apps.length === 0) {
+        let credential;
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+          credential = admin.credential.cert(serviceAccount);
+        } else {
+          credential = admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+          });
+        }
+        
+        const config = { credential };
+        if (process.env.FIREBASE_STORAGE_BUCKET) {
+          config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+        }
+        
+        admin.initializeApp(config);
+      }
+      
+      firestoreDb = admin.firestore();
+      
+      if (process.env.FIREBASE_STORAGE_BUCKET) {
+        storageBucket = admin.storage().bucket();
+      }
+      
+      activeDbType = DB_TYPE.FIREBASE;
+      console.log('Firebase initialized successfully as active database.');
+      dbInitialized = true;
+      return;
+    } catch (err) {
+      console.error('Failed to initialize Firebase:', err);
+      throw err; // Fail loudly in production
+    }
+  }
+
+  // 2. Try MongoDB Atlas next
+  if (process.env.MONGODB_URI) {
+    try {
+      dbClient = new MongoClient(process.env.MONGODB_URI);
       await dbClient.connect();
       const db = dbClient.db(DB_NAME);
       submissionsCollection = db.collection(COLLECTION_NAME);
+      activeDbType = DB_TYPE.MONGODB;
       console.log('Connected to MongoDB Atlas successfully.');
-      return submissionsCollection;
+      dbInitialized = true;
+      return;
     } catch (err) {
       console.error('Failed to connect to MongoDB Atlas:', err);
       throw err; // Fail loudly in production
     }
   }
-  return null;
+
+  // 3. Fallback to Local JSON
+  activeDbType = DB_TYPE.LOCAL;
+  console.log('Using Local JSON File fallback.');
+  dbInitialized = true;
 }
 
-// Database file path for fallback
-const DB_FILE = path.join(__dirname, '../submissions.json');
-
-// Helper to read database
-async function readDatabase() {
-  const collection = await connectToDatabase();
-  if (collection) {
-    try {
-      return await collection.find({}).toArray();
-    } catch (err) {
-      console.error('Error reading from MongoDB:', err);
-    }
+// Database helper functions
+async function getAllSubmissions() {
+  await initDatabase();
+  
+  if (activeDbType === DB_TYPE.FIREBASE) {
+    const snapshot = await firestoreDb.collection(COLLECTION_NAME).get();
+    const list = [];
+    snapshot.forEach(doc => {
+      list.push(doc.data());
+    });
+    list.sort((a, b) => b.id - a.id);
+    return list;
   }
   
-  // Fallback to JSON file
-  if (!fs.existsSync(DB_FILE)) {
-    return [];
+  if (activeDbType === DB_TYPE.MONGODB) {
+    const list = await submissionsCollection.find({}).toArray();
+    list.sort((a, b) => b.id - a.id);
+    return list;
   }
+  
+  // Local JSON File
+  if (!fs.existsSync(DB_FILE)) return [];
   try {
     const data = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(data || '[]');
+    const list = JSON.parse(data || '[]');
+    list.sort((a, b) => b.id - a.id);
+    return list;
   } catch (err) {
     console.error('Error reading database file:', err);
     return [];
   }
 }
 
-// Helper to write database (only used for JSON fallback)
-function writeDatabaseJSON(data) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error writing to database file:', err);
+async function getSubmissionById(id) {
+  await initDatabase();
+  
+  if (activeDbType === DB_TYPE.FIREBASE) {
+    const doc = await firestoreDb.collection(COLLECTION_NAME).doc(id.toString()).get();
+    return doc.exists ? doc.data() : null;
   }
+  
+  if (activeDbType === DB_TYPE.MONGODB) {
+    return await submissionsCollection.findOne({ id: id });
+  }
+  
+  const list = await getAllSubmissions();
+  return list.find(s => s.id === id) || null;
+}
+
+async function saveSubmission(submission) {
+  await initDatabase();
+  
+  if (activeDbType === DB_TYPE.FIREBASE) {
+    await firestoreDb.collection(COLLECTION_NAME).doc(submission.id.toString()).set(submission);
+    return;
+  }
+  
+  if (activeDbType === DB_TYPE.MONGODB) {
+    await submissionsCollection.insertOne(submission);
+    return;
+  }
+  
+  const list = await getAllSubmissions();
+  list.push(submission);
+  fs.writeFileSync(DB_FILE, JSON.stringify(list, null, 2), 'utf8');
+}
+
+async function deleteSubmission(id) {
+  await initDatabase();
+  
+  if (activeDbType === DB_TYPE.FIREBASE) {
+    const docRef = firestoreDb.collection(COLLECTION_NAME).doc(id.toString());
+    const doc = await docRef.get();
+    if (!doc.exists) return false;
+    await docRef.delete();
+    return true;
+  }
+  
+  if (activeDbType === DB_TYPE.MONGODB) {
+    const result = await submissionsCollection.deleteOne({ id: id });
+    return result.deletedCount > 0;
+  }
+  
+  const list = await getAllSubmissions();
+  const index = list.findIndex(s => s.id === id);
+  if (index === -1) return false;
+  list.splice(index, 1);
+  fs.writeFileSync(DB_FILE, JSON.stringify(list, null, 2), 'utf8');
+  return true;
+}
+
+async function clearAllSubmissions() {
+  await initDatabase();
+  
+  if (activeDbType === DB_TYPE.FIREBASE) {
+    const snapshot = await firestoreDb.collection(COLLECTION_NAME).get();
+    const batch = firestoreDb.batch();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    return;
+  }
+  
+  if (activeDbType === DB_TYPE.MONGODB) {
+    await submissionsCollection.deleteMany({});
+    return;
+  }
+  
+  fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2), 'utf8');
 }
 
 // Configure Multer for PDF file uploads in Memory
@@ -93,7 +235,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for serverless functions
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
 // API 1: Submit new data
@@ -116,24 +258,46 @@ app.post('/api/submissions', upload.single('attachment'), async (req, res) => {
       weeks: parsedWeeks,
       notes: notes || '',
       submittedAt: new Date().toISOString(),
-      attachment: req.file ? {
+      attachment: null
+    };
+
+    if (req.file) {
+      newSubmission.attachment = {
         originalName: req.file.originalname,
         filename: `attachment-${id}.pdf`,
         path: `/api/submissions/attachment/${id}`,
         size: req.file.size,
-        mimeType: req.file.mimetype,
-        data: req.file.buffer.toString('base64')
-      } : null
-    };
+        mimeType: req.file.mimetype
+      };
 
-    const collection = await connectToDatabase();
-    if (collection) {
-      await collection.insertOne(newSubmission);
-    } else {
-      const submissions = await readDatabase();
-      submissions.push(newSubmission);
-      writeDatabaseJSON(submissions);
+      await initDatabase();
+      if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+        // Upload attachment to Firebase Storage
+        const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
+        await fileRef.save(req.file.buffer, {
+          contentType: req.file.mimetype,
+          resumable: false,
+          metadata: {
+            originalName: req.file.originalname,
+            submissionId: id
+          }
+        });
+      } else {
+        // Fallback: Store as Base64 (Checking Firestore document size limit)
+        if (activeDbType === DB_TYPE.FIREBASE) {
+          const base64Length = req.file.buffer.toString('base64').length;
+          if (base64Length > 800 * 1024) { // Roughly 800KB
+            return res.status(400).json({
+              success: false,
+              message: 'حجم الملف المرفق كبير جداً بالنسبة لـ Firebase Firestore (الحد الأقصى للمستند 1 ميجابايت). يرجى تهيئة Firebase Storage أو تقليل حجم الملف المرفق.'
+            });
+          }
+        }
+        newSubmission.attachment.data = req.file.buffer.toString('base64');
+      }
     }
+
+    await saveSubmission(newSubmission);
 
     // Exclude heavy base64 file data from the immediate return payload
     const returnData = { ...newSubmission };
@@ -151,7 +315,7 @@ app.post('/api/submissions', upload.single('attachment'), async (req, res) => {
 // API 2: Get all submissions (cumulative data)
 app.get('/api/submissions', async (req, res) => {
   try {
-    const submissions = await readDatabase();
+    const submissions = await getAllSubmissions();
     // Exclude heavy base64 file data from the list query
     const cleanedSubmissions = submissions.map(sub => {
       const cleaned = { ...sub };
@@ -167,25 +331,32 @@ app.get('/api/submissions', async (req, res) => {
   }
 });
 
-// API 3: Retrieve PDF attachment from Database
+// API 3: Retrieve PDF attachment from Database or Storage
 app.get('/api/submissions/attachment/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const collection = await connectToDatabase();
-    let submission = null;
+    const submission = await getSubmissionById(id);
     
-    if (collection) {
-      submission = await collection.findOne({ id: id });
-    } else {
-      const submissions = await readDatabase();
-      submission = submissions.find(s => s.id === id);
-    }
-    
-    if (!submission || !submission.attachment || !submission.attachment.data) {
+    if (!submission || !submission.attachment) {
       return res.status(404).send('Attachment not found');
     }
     
-    const fileBuffer = Buffer.from(submission.attachment.data, 'base64');
+    let fileBuffer;
+    if (submission.attachment.data) {
+      fileBuffer = Buffer.from(submission.attachment.data, 'base64');
+    } else if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+      // Download from Firebase Storage
+      const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
+      const [exists] = await fileRef.exists();
+      if (!exists) {
+        return res.status(404).send('Attachment file not found in Storage');
+      }
+      const [downloadedBuffer] = await fileRef.download();
+      fileBuffer = downloadedBuffer;
+    } else {
+      return res.status(404).send('Attachment data not found');
+    }
+    
     res.setHeader('Content-Type', submission.attachment.mimeType || 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(submission.attachment.originalName)}"`);
     res.send(fileBuffer);
@@ -199,21 +370,25 @@ app.get('/api/submissions/attachment/:id', async (req, res) => {
 app.delete('/api/submissions/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const collection = await connectToDatabase();
     
-    if (collection) {
-      const result = await collection.deleteOne({ id: id });
-      if (result.deletedCount === 0) {
-        return res.status(404).json({ success: false, message: 'Submission not found' });
+    // Check if we need to delete from Firebase Storage first
+    await initDatabase();
+    if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+      try {
+        const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
+        const [exists] = await fileRef.exists();
+        if (exists) {
+          await fileRef.delete();
+          console.log(`Deleted attachment-${id}.pdf from Firebase Storage`);
+        }
+      } catch (storageErr) {
+        console.error('Error deleting file from Firebase Storage:', storageErr);
       }
-    } else {
-      let submissions = await readDatabase();
-      const index = submissions.findIndex(s => s.id === id);
-      if (index === -1) {
-        return res.status(404).json({ success: false, message: 'Submission not found' });
-      }
-      submissions.splice(index, 1);
-      writeDatabaseJSON(submissions);
+    }
+
+    const deleted = await deleteSubmission(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Submission not found' });
     }
     
     res.json({ success: true, message: 'Submission deleted successfully' });
@@ -226,12 +401,19 @@ app.delete('/api/submissions/:id', async (req, res) => {
 // API 5: Delete all submissions (Clear all)
 app.delete('/api/submissions', async (req, res) => {
   try {
-    const collection = await connectToDatabase();
-    if (collection) {
-      await collection.deleteMany({});
-    } else {
-      writeDatabaseJSON([]);
+    await initDatabase();
+    
+    // If Firebase Storage is active, clear all files in attachments/ prefix
+    if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+      try {
+        await storageBucket.deleteFiles({ prefix: 'attachments/' });
+        console.log('Cleared all files from Firebase Storage');
+      } catch (storageErr) {
+        console.error('Error clearing files from Firebase Storage:', storageErr);
+      }
     }
+
+    await clearAllSubmissions();
     res.json({ success: true, message: 'All submissions cleared successfully' });
   } catch (error) {
     console.error('Clear all error:', error);
@@ -240,17 +422,42 @@ app.delete('/api/submissions', async (req, res) => {
 });
 
 // Route to inspect environment variable state
-app.get('/api/test-env', (req, res) => {
+app.get('/api/test-env', async (req, res) => {
+  try {
+    await initDatabase();
+  } catch (err) {
+    // Continue even if database connection fails so env status is visible
+  }
+
   const rawUri = process.env.MONGODB_URI;
   let maskedUri = 'undefined';
   if (rawUri !== undefined) {
     maskedUri = rawUri.replace(/[a-zA-Z0-9]/g, '*');
   }
+
+  const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+  let maskedServiceAccount = 'undefined';
+  if (rawServiceAccount !== undefined) {
+    maskedServiceAccount = rawServiceAccount.replace(/[a-zA-Z0-9]/g, '*');
+  }
+
   res.json({
+    activeDatabaseType: activeDbType,
+    databaseInitialized: dbInitialized,
+    
+    // MongoDB
     mongodbUriDefined: !!rawUri,
     mongodbUriLength: rawUri ? rawUri.length : 0,
     mongodbUriType: typeof rawUri,
     mongodbUriMasked: maskedUri,
+    
+    // Firebase
+    firebaseServiceAccountDefined: !!rawServiceAccount,
+    firebaseServiceAccountLength: rawServiceAccount ? rawServiceAccount.length : 0,
+    firebaseServiceAccountMasked: maskedServiceAccount,
+    firebaseStorageBucketDefined: !!process.env.FIREBASE_STORAGE_BUCKET,
+    firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET || null,
+    
     allEnvKeys: Object.keys(process.env)
   });
 });
