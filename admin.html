@@ -65,6 +65,7 @@
         .report-header img { width: 50px; height: 50px; margin: 0 auto 8px; display: block; object-fit: contain; }
         .report-title { font-size: 1.4rem; font-weight: 700; color: #000; margin-bottom: 5px; }
         .report-subtitle { font-size: 1.05rem; color: #333; margin-bottom: 8px; }
+        .report-unit { text-align: right; font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border-right: 4px solid #c41e3a; }
         .monthly-report { margin-top: 15px; }
         .monthly-week { margin-bottom: 15px; page-break-inside: avoid; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
         .week-header { background: #c41e3a; color: white; padding: 8px 12px; text-align: center; font-weight: 700; display: flex; justify-content: space-between; align-items: center; font-size: 1rem; }
@@ -205,7 +206,7 @@
                     <img src="image.jpeg" alt="شعار المتابعة">
                     <div class="report-title">التقرير الشهري التراكمي</div>
                     <div class="report-subtitle">قسم التصاريح الأمنية - شعبة المتابعة</div>
-                    <div style="text-align: right; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; padding: 5px 8px; background: #f8f9fa; border-radius: 6px; border-right: 3px solid #1e3c72;" id="detailReportUnit">الوحدة: <span></span></div>
+                    <div class="report-unit" id="detailReportUnit">الوحدة: <span></span></div>
                     <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.9rem;">
                         <div>الفترة: <span id="detailPeriod"></span></div>
                         <div>تاريخ التقرير: <span id="detailReportDate"></span></div>
@@ -477,14 +478,23 @@
                 
                 const table = document.createElement('table');
                 table.className = 'monthly-table';
+                table.style.tableLayout = 'fixed';
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
                 
                 const thead = document.createElement('thead');
                 thead.innerHTML = `
-                    <tr style="background:#f0f0f0;">
-                        <th style="width:4%;">ت</th>
-                        <th style="width:20%;">الاسم الثلاثي</th>
-                        <th>السبت</th><th>الأحد</th><th>الإثنين</th><th>الثلاثاء</th><th>الأربعاء</th><th>الخميس</th><th>الجمعة</th>
-                        <th style="width:12%;">الدوام</th>
+                    <tr style="background: #f0f0f0;">
+                        <th style="width: 3%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">ت</th>
+                        <th style="width: 16%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الاسم الثلاثي</th>
+                        <th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">السبت</th>
+                        <th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الأحد</th>
+                        <th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الإثنين</th>
+                        <th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الثلاثاء</th>
+                        <th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الأربعاء</th>
+                        <th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الخميس</th>
+                        <th style="width: 11%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">الجمعة</th>
+                        <th style="width: 14%; border: 1px solid #333; padding: 4px 1px; font-size: 0.68rem; text-align: center; font-weight: 700; overflow: hidden;">حالة الدوام</th>
                     </tr>
                 `;
                 table.appendChild(thead);
@@ -492,30 +502,35 @@
                 const tbody = document.createElement('tbody');
                 week.employees.forEach(emp => {
                     const tr = document.createElement('tr');
-                    let statusHtml = '';
-                    emp.days.forEach(day => {
-                        statusHtml += `<td style="color:${getStatusColor(day)};">${statusFullNames[day] || day}</td>`;
-                    });
-                    
                     tr.innerHTML = `
-                        <td>${emp.id}</td>
-                        <td style="font-weight:bold;">${emp.name}</td>
-                        ${statusHtml}
-                        <td style="color:${getShiftColor(emp.shift || 'morning')};">${shiftNames[emp.shift || 'morning'] || 'صباحي'}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; overflow: hidden;">${emp.id}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; word-wrap: break-word; overflow: hidden; font-weight: bold;">${emp.name}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ${getStatusColor(emp.days[0])}; font-weight: bold; overflow: hidden;">${statusFullNames[emp.days[0]] || emp.days[0]}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ${getStatusColor(emp.days[1])}; font-weight: bold; overflow: hidden;">${statusFullNames[emp.days[1]] || emp.days[1]}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ${getStatusColor(emp.days[2])}; font-weight: bold; overflow: hidden;">${statusFullNames[emp.days[2]] || emp.days[2]}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ${getStatusColor(emp.days[3])}; font-weight: bold; overflow: hidden;">${statusFullNames[emp.days[3]] || emp.days[3]}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ${getStatusColor(emp.days[4])}; font-weight: bold; overflow: hidden;">${statusFullNames[emp.days[4]] || emp.days[4]}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ${getStatusColor(emp.days[5])}; font-weight: bold; overflow: hidden;">${statusFullNames[emp.days[5]] || emp.days[5]}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; color: ${getStatusColor(emp.days[6])}; font-weight: bold; overflow: hidden;">${statusFullNames[emp.days[6]] || emp.days[6]}</td>
+                        <td style="border: 1px solid #333; padding: 3px 1px; text-align: center; font-size: 0.72rem; font-weight: bold; color: ${getShiftColor(emp.shift || 'morning')}; overflow: hidden;">${shiftNames[emp.shift || 'morning'] || 'صباحي'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
                 table.appendChild(tbody);
                 weekDiv.appendChild(table);
                 
-                if (week.notes) {
-                    const note = document.createElement('div');
-                    note.style.padding = '8px';
-                    note.style.background = '#fffbeb';
-                    note.style.border = '1px solid #f59e0b';
-                    note.style.fontSize = '0.85rem';
-                    note.innerHTML = `📌 <b>ملاحظات:</b> ${week.notes}`;
-                    weekDiv.appendChild(note);
+                if (week.notes && week.notes.trim() !== '') {
+                    const notesDiv = document.createElement('div');
+                    notesDiv.style.background = '#fffbeb';
+                    notesDiv.style.border = '1px solid #f59e0b';
+                    notesDiv.style.borderRadius = '6px';
+                    notesDiv.style.padding = '10px 15px';
+                    notesDiv.style.marginTop = '10px';
+                    notesDiv.style.fontSize = '0.85rem';
+                    notesDiv.style.color = '#92400e';
+                    notesDiv.style.fontWeight = '600';
+                    notesDiv.innerHTML = `<span style="color: #c41e3a;">📌 ملاحظات:</span> ${week.notes}`;
+                    weekDiv.appendChild(notesDiv);
                 }
                 
                 container.appendChild(weekDiv);
@@ -821,7 +836,7 @@
                                 <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الأربعاء</th>
                                 <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الخميس</th>
                                 <th style="border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الجمعة</th>
-                                <th style="width: 10%; border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">الدوام</th>
+                                <th style="width: 10%; border: 1px solid #333; padding: 6px 2px; font-weight: 700; text-align: center;">حالة الدوام</th>
                             </tr>
                         </thead>
                     `;
