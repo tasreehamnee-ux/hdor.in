@@ -18,7 +18,8 @@ app.use(express.static(path.join(__dirname, '..')));
 
 // Database Types
 const DB_TYPE = {
-  FIREBASE: 'firebase',
+  FIREBASE_FIRESTORE: 'firebase_firestore',
+  FIREBASE_RTDB: 'firebase_rtdb',
   MONGODB: 'mongodb',
   LOCAL: 'local'
 };
@@ -34,6 +35,7 @@ const COLLECTION_NAME = 'submissions';
 
 // Firebase configurations
 let firestoreDb = null;
+let realtimeDb = null;
 let storageBucket = null;
 
 // Database file path for local fallback
@@ -43,7 +45,7 @@ const DB_FILE = path.join(__dirname, '../submissions.json');
 async function initDatabase() {
   if (dbInitialized) return;
 
-  // 1. Try Firebase Firestore first
+  // 1. Try Firebase first (Firestore or Realtime Database)
   if (process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_PRIVATE_KEY) {
     try {
       const admin = require('firebase-admin');
@@ -51,15 +53,18 @@ async function initDatabase() {
       // Prevent initializing multiple apps in development/hot-reloads
       if (admin.apps.length === 0) {
         let credential;
+        let projectId = '';
         if (process.env.FIREBASE_SERVICE_ACCOUNT) {
           const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
           credential = admin.credential.cert(serviceAccount);
+          projectId = serviceAccount.project_id;
         } else {
           credential = admin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
             privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
           });
+          projectId = process.env.FIREBASE_PROJECT_ID;
         }
         
         const config = { credential };
@@ -67,17 +72,28 @@ async function initDatabase() {
           config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
         }
         
+        // If databaseURL is set or if we use RTDB
+        const rtdbUrl = process.env.FIREBASE_DATABASE_URL || `https://${projectId}-default-rtdb.firebaseio.com`;
+        config.databaseURL = rtdbUrl;
+        
         admin.initializeApp(config);
       }
       
-      firestoreDb = admin.firestore();
+      // Determine database type to use (Realtime DB or Cloud Firestore)
+      if (process.env.FIREBASE_DATABASE_URL || process.env.FIREBASE_USE_RTDB === 'true') {
+        realtimeDb = admin.database();
+        activeDbType = DB_TYPE.FIREBASE_RTDB;
+        console.log('Firebase Realtime Database initialized successfully.');
+      } else {
+        firestoreDb = admin.firestore();
+        activeDbType = DB_TYPE.FIREBASE_FIRESTORE;
+        console.log('Firebase Firestore initialized successfully.');
+      }
       
       if (process.env.FIREBASE_STORAGE_BUCKET) {
         storageBucket = admin.storage().bucket();
       }
       
-      activeDbType = DB_TYPE.FIREBASE;
-      console.log('Firebase initialized successfully as active database.');
       dbInitialized = true;
       return;
     } catch (err) {
@@ -113,12 +129,21 @@ async function initDatabase() {
 async function getAllSubmissions() {
   await initDatabase();
   
-  if (activeDbType === DB_TYPE.FIREBASE) {
+  if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
     const snapshot = await firestoreDb.collection(COLLECTION_NAME).get();
     const list = [];
     snapshot.forEach(doc => {
       list.push(doc.data());
     });
+    list.sort((a, b) => b.id - a.id);
+    return list;
+  }
+  
+  if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
+    const snapshot = await realtimeDb.ref(COLLECTION_NAME).once('value');
+    const val = snapshot.val();
+    if (!val) return [];
+    const list = Object.values(val);
     list.sort((a, b) => b.id - a.id);
     return list;
   }
@@ -145,9 +170,14 @@ async function getAllSubmissions() {
 async function getSubmissionById(id) {
   await initDatabase();
   
-  if (activeDbType === DB_TYPE.FIREBASE) {
+  if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
     const doc = await firestoreDb.collection(COLLECTION_NAME).doc(id.toString()).get();
     return doc.exists ? doc.data() : null;
+  }
+  
+  if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
+    const snapshot = await realtimeDb.ref(`${COLLECTION_NAME}/${id}`).once('value');
+    return snapshot.val();
   }
   
   if (activeDbType === DB_TYPE.MONGODB) {
@@ -161,8 +191,13 @@ async function getSubmissionById(id) {
 async function saveSubmission(submission) {
   await initDatabase();
   
-  if (activeDbType === DB_TYPE.FIREBASE) {
+  if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
     await firestoreDb.collection(COLLECTION_NAME).doc(submission.id.toString()).set(submission);
+    return;
+  }
+  
+  if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
+    await realtimeDb.ref(`${COLLECTION_NAME}/${submission.id}`).set(submission);
     return;
   }
   
@@ -179,11 +214,19 @@ async function saveSubmission(submission) {
 async function deleteSubmission(id) {
   await initDatabase();
   
-  if (activeDbType === DB_TYPE.FIREBASE) {
+  if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
     const docRef = firestoreDb.collection(COLLECTION_NAME).doc(id.toString());
     const doc = await docRef.get();
     if (!doc.exists) return false;
     await docRef.delete();
+    return true;
+  }
+  
+  if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
+    const ref = realtimeDb.ref(`${COLLECTION_NAME}/${id}`);
+    const snapshot = await ref.once('value');
+    if (!snapshot.exists()) return false;
+    await ref.remove();
     return true;
   }
   
@@ -203,13 +246,18 @@ async function deleteSubmission(id) {
 async function clearAllSubmissions() {
   await initDatabase();
   
-  if (activeDbType === DB_TYPE.FIREBASE) {
+  if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
     const snapshot = await firestoreDb.collection(COLLECTION_NAME).get();
     const batch = firestoreDb.batch();
     snapshot.forEach(doc => {
       batch.delete(doc.ref);
     });
     await batch.commit();
+    return;
+  }
+  
+  if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
+    await realtimeDb.ref(COLLECTION_NAME).remove();
     return;
   }
   
@@ -271,7 +319,7 @@ app.post('/api/submissions', upload.single('attachment'), async (req, res) => {
       };
 
       await initDatabase();
-      if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+      if (activeDbType.startsWith('firebase') && storageBucket) {
         // Upload attachment to Firebase Storage
         const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
         await fileRef.save(req.file.buffer, {
@@ -284,12 +332,12 @@ app.post('/api/submissions', upload.single('attachment'), async (req, res) => {
         });
       } else {
         // Fallback: Store as Base64 (Checking Firestore document size limit)
-        if (activeDbType === DB_TYPE.FIREBASE) {
+        if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
           const base64Length = req.file.buffer.toString('base64').length;
           if (base64Length > 800 * 1024) { // Roughly 800KB
             return res.status(400).json({
               success: false,
-              message: 'حجم الملف المرفق كبير جداً بالنسبة لـ Firebase Firestore (الحد الأقصى للمستند 1 ميجابايت). يرجى تهيئة Firebase Storage أو تقليل حجم الملف المرفق.'
+              message: 'حجم الملف المرفق كبير جداً بالنسبة لـ Firebase Firestore (الحد الأقصى للمستند 1 ميجابايت). يرجى تهيئة Firebase Storage أو استخدام Firebase Realtime Database أو تقليل حجم الملف المرفق.'
             });
           }
         }
@@ -344,7 +392,7 @@ app.get('/api/submissions/attachment/:id', async (req, res) => {
     let fileBuffer;
     if (submission.attachment.data) {
       fileBuffer = Buffer.from(submission.attachment.data, 'base64');
-    } else if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+    } else if (activeDbType.startsWith('firebase') && storageBucket) {
       // Download from Firebase Storage
       const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
       const [exists] = await fileRef.exists();
@@ -373,7 +421,7 @@ app.delete('/api/submissions/:id', async (req, res) => {
     
     // Check if we need to delete from Firebase Storage first
     await initDatabase();
-    if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+    if (activeDbType.startsWith('firebase') && storageBucket) {
       try {
         const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
         const [exists] = await fileRef.exists();
@@ -404,7 +452,7 @@ app.delete('/api/submissions', async (req, res) => {
     await initDatabase();
     
     // If Firebase Storage is active, clear all files in attachments/ prefix
-    if (activeDbType === DB_TYPE.FIREBASE && storageBucket) {
+    if (activeDbType.startsWith('firebase') && storageBucket) {
       try {
         await storageBucket.deleteFiles({ prefix: 'attachments/' });
         console.log('Cleared all files from Firebase Storage');
@@ -457,6 +505,8 @@ app.get('/api/test-env', async (req, res) => {
     firebaseServiceAccountMasked: maskedServiceAccount,
     firebaseStorageBucketDefined: !!process.env.FIREBASE_STORAGE_BUCKET,
     firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET || null,
+    firebaseDatabaseUrlDefined: !!process.env.FIREBASE_DATABASE_URL,
+    firebaseDatabaseUrl: process.env.FIREBASE_DATABASE_URL || null,
     
     allEnvKeys: Object.keys(process.env)
   });
