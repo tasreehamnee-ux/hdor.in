@@ -328,6 +328,18 @@
                     allSubmissions = await getAllSubmissionsDB();
                 }
 
+                // Safety Parse: Ensure sub.weeks is a parsed object
+                allSubmissions.forEach(sub => {
+                    if (sub && typeof sub.weeks === 'string') {
+                        try {
+                            sub.weeks = JSON.parse(sub.weeks);
+                        } catch (e) {
+                            console.error('Error parsing sub.weeks:', e);
+                            sub.weeks = {};
+                        }
+                    }
+                });
+
                 document.getElementById('statTotalSubmissions').textContent = allSubmissions.length;
                 
                 const uniqueUnits = new Set(allSubmissions.map(s => s.unitName));
@@ -390,7 +402,7 @@
                     <td>${attachmentHtml}</td>
                     <td>
                         <div style="display: flex; gap: 5px; justify-content: center;">
-                            <button class="nav-btn secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick='viewSubmissionDetails(${JSON.stringify(sub).replace(/'/g, "&apos;")})'>👁️ عرض</button>
+                            <button class="nav-btn secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="viewSubmissionDetailsByID(${sub.id})">👁️ عرض</button>
                             <button class="nav-btn danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteSubmission(${sub.id})">🗑️ حذف</button>
                         </div>
                     </td>
@@ -450,6 +462,15 @@
                 month: parseInt(m.format('iMM')),
                 day: parseInt(m.format('iDD'))
             };
+        }
+
+        function viewSubmissionDetailsByID(id) {
+            const sub = allSubmissions.find(s => s.id === id);
+            if (!sub) {
+                showToast('❌ لم يتم العثور على البيانات');
+                return;
+            }
+            viewSubmissionDetails(sub);
         }
 
         function viewSubmissionDetails(sub) {
@@ -670,23 +691,27 @@
 
                 submissions.forEach(sub => {
                     const submittedAt = new Date(sub.submittedAt || sub.id).toLocaleString('ar-SA');
-                    Object.values(sub.weeks).forEach(week => {
-                        const weekNum = week.weekNumber;
-                        if (weeksGroup[weekNum]) {
-                            week.employees.forEach(emp => {
-                                weeksGroup[weekNum].push({
-                                    submittedAt: submittedAt,
-                                    unitName: sub.unitName,
-                                    startDate: week.startDate,
-                                    endDate: week.endDate,
-                                    name: emp.name,
-                                    shift: emp.shift || 'morning',
-                                    days: emp.days,
-                                    notes: week.notes || ''
-                                });
-                            });
-                        }
-                    });
+                    if (sub.weeks) {
+                        Object.values(sub.weeks).forEach(week => {
+                            if (week && week.employees) {
+                                const weekNum = week.weekNumber;
+                                if (weeksGroup[weekNum]) {
+                                    week.employees.forEach(emp => {
+                                        weeksGroup[weekNum].push({
+                                            submittedAt: submittedAt,
+                                            unitName: sub.unitName,
+                                            startDate: week.startDate,
+                                            endDate: week.endDate,
+                                            name: emp.name,
+                                            shift: emp.shift || 'morning',
+                                            days: emp.days,
+                                            notes: week.notes || ''
+                                        });
+                                    });
+                                }
+                            }
+                        });
+                    }
                 });
 
                 const wb = XLSX.utils.book_new();
@@ -766,22 +791,26 @@
                 submissions.sort((a, b) => a.id - b.id);
 
                 submissions.forEach(sub => {
-                    Object.values(sub.weeks).forEach(week => {
-                        const weekNum = week.weekNumber;
-                        if (weeksGroup[weekNum]) {
-                            week.employees.forEach(emp => {
-                                weeksGroup[weekNum].push({
-                                    unitName: sub.unitName,
-                                    name: emp.name,
-                                    days: emp.days,
-                                    shift: emp.shift || 'morning',
-                                    startDate: week.startDate,
-                                    endDate: week.endDate
-                                });
-                                totalEmployeesCount++;
-                            });
-                        }
-                    });
+                    if (sub.weeks) {
+                        Object.values(sub.weeks).forEach(week => {
+                            if (week && week.employees) {
+                                const weekNum = week.weekNumber;
+                                if (weeksGroup[weekNum]) {
+                                    week.employees.forEach(emp => {
+                                        weeksGroup[weekNum].push({
+                                            unitName: sub.unitName,
+                                            name: emp.name,
+                                            days: emp.days,
+                                            shift: emp.shift || 'morning',
+                                            startDate: week.startDate,
+                                            endDate: week.endDate
+                                        });
+                                        totalEmployeesCount++;
+                                    });
+                                }
+                            }
+                        });
+                    }
                 });
 
                 // Clear previous tables
