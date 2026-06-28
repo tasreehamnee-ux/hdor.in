@@ -84,26 +84,16 @@
     </div>
     <div class="toast" id="toast"></div>
 
-    <!-- Password Modal for Admin (Locked by default) -->
-    <div class="modal-overlay active" id="adminPasswordModal">
-        <div class="modal-content">
-            <div class="modal-title">🔑 رمز دخول الإدارة</div>
-            <div class="modal-text">الرجاء إدخال رمز المرور للوصول للوحة التحكم:</div>
-            <input type="password" id="adminPasswordInput" class="form-input" style="text-align: center; margin-bottom: 15px;" placeholder="أدخل الرمز" autofocus>
-            <div class="modal-buttons">
-                <button class="modal-btn confirm" onclick="checkAdminPassword()">دخول</button>
-            </div>
-        </div>
-    </div>
+    <!-- Password Modal removed - direct access enabled -->
+    <div class="modal-overlay" id="adminPasswordModal" style="display:none;"></div>
 
     <!-- Admin Top Header (Visible after login) -->
-    <div class="top-header" id="adminHeader" style="display: none;">
+    <div class="top-header" id="adminHeader" style="display: flex;">
         <div class="logo-center">
             <img src="image.jpeg" alt="شعار التصاريح الأمنية" class="logo-img-top">
             <div class="logo-text-top">لوحة الإدارة - التصاريح الأمنية</div>
         </div>
         <div style="display: flex; gap: 8px;">
-            <button class="nav-btn primary" onclick="openChangePasswordModal()" style="background: #2980b9;">⚙️ تغيير رمز المرور</button>
             <a href="index.html" class="nav-btn secondary">📝 تسجيل الحضور</a>
         </div>
     </div>
@@ -992,8 +982,14 @@
             closeChangePasswordModal();
         }
 
-        document.getElementById('adminPasswordInput').addEventListener('keyup', e => { if (e.key === 'Enter') checkAdminPassword(); });
-        window.addEventListener('DOMContentLoaded', () => { initDB().catch(console.error); moment.locale('ar'); });
+        window.addEventListener('DOMContentLoaded', () => {
+            initDB().catch(console.error);
+            moment.locale('ar');
+            // Auto-authenticate: show panel directly without password
+            isAdminAuthenticated = true;
+            document.getElementById('adminSection').classList.add('active');
+            refreshAdminData();
+        });
     </script>
 </body>
 </html>
