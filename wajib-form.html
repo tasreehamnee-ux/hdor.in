@@ -1,101 +1,110 @@
 <!DOCTYPE html>
-<html lang=ar dir=rtl>
+<html lang="ar" dir="rtl">
 <head>
-<meta charset=UTF-8>
-<title>wajib</title>
-<link href=https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700;900 rel=stylesheet>
+<meta charset="UTF-8">
+<title>استمارة واجبات</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Noto Naskh Arabic,Arial;background:#f5f5f5;padding:20px;direction:rtl}
-.page{width:210mm;min-height:297mm;background:white;margin:0 auto;padding:15mm 20mm 25mm;box-shadow:0 0 10px rgba(0,0,0,.1)}
-.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;border-bottom:3px double #1a3a5c;padding-bottom:15px}
+body{font-family:"Noto Naskh Arabic",Arial,sans-serif;background:#f5f5f5;padding:20px;direction:rtl}
+.page{width:210mm;min-height:297mm;background:white;margin:0 auto;padding:12mm 15mm 20mm;box-shadow:0 0 15px rgba(0,0,0,.15)}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;border-bottom:3px solid #1a3a5c;padding-bottom:12px}
 .hright{text-align:right;flex:1}
-.mn{font-size:18px;font-weight:900;color:#1a3a5c;margin-bottom:6px}
+.mn{font-size:19px;font-weight:900;color:#1a3a5c;margin-bottom:5px}
 .of{font-size:16px;font-weight:700;color:#333;margin-bottom:4px}
-.dp{font-size:14px;font-weight:700;color:#c41e3a}
-.hc{display:flex;align-items:center;justify-content:center;padding:0 20px}
-.hc img{width:90px;height:90px;object-fit:contain}
-.hl{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:5px}
-.fr{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
-.fr label{white-space:nowrap;color:#1a3a5c}
-.fl{display:inline-block;flex:1;min-width:100px;border-bottom:1.5px solid #000}
-.ttl{text-align:center;font-size:22px;font-weight:900;color:#1a3a5c;margin:20px 0;padding:10px;border:2px solid #1a3a5c;border-radius:6px;background:#f0f4f8}
-table{width:100%;border-collapse:collapse;margin:10px 0 30px 0}
-th,td{border:1.5px solid #6899c8;padding:10px 8px;text-align:center;font-size:14px;vertical-align:middle}
-.er td{height:42px}
-.ftr{display:flex;justify-content:space-between;margin-top:50px;padding:0 20px}
-.fi{font-size:16px;font-weight:900;text-align:center;color:#1a3a5c}
-.fi .sl{display:block;width:130px;border-bottom:1.5px solid #000;margin:30px auto 5px auto}
-@media print{body,page{background:white;padding:0}.page{box-shadow:none;margin:0;width:100%}.bw{display:none!important}}
-.bw{text-align:center;margin-bottom:20px}
-.db{padding:12px 30px;background:linear-gradient(135deg,#c41e3a,#8b0000);color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-left:10px}
-.pb{padding:12px 30px;background:linear-gradient(135deg,#2c3e50,#34495e);color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer}
+.dp{font-size:15px;font-weight:700;color:#1a3a5c}
+.hc{display:flex;align-items:center;justify-content:center;min-width:130px;padding:0 25px}
+.hc img{width:110px;height:110px;object-fit:contain}
+.hlft{flex:1;display:flex;flex-direction:column;gap:14px;padding-right:20px}
+.fr{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;direction:rtl}
+.fr label{white-space:nowrap;color:#1a3a5c;min-width:55px;text-align:right}
+.fl{display:inline-block;flex:1;border-bottom:1.5px solid #000}
+.ttl{text-align:center;font-size:22px;font-weight:900;color:#1a3a5c;margin:18px 0 12px;letter-spacing:2px}
+table{width:100%;border-collapse:collapse;margin:0 0 20px 0}
+th,td{border:1.5px solid #4a7ab5;padding:9px 6px;text-align:center;font-size:13px;vertical-align:middle}
+.mh th{background:#5b8ec7;color:white;font-weight:900;font-size:13px}
+.sh th{background:#a8c8e8;color:#1a3a5c;font-weight:900;font-size:12px}
+.er td{height:40px}
+.ftr{display:flex;justify-content:space-between;margin-top:70px;padding:0 40px}
+.fi{font-size:17px;font-weight:900;text-align:center;color:#1a3a5c}
+.fi .sl{display:block;width:150px;border-bottom:2px solid #1a3a5c;margin:45px auto 0 auto}
+@media print{body{background:white;padding:0}.page{box-shadow:none;margin:0;width:100%;padding:8mm 12mm 15mm}.bw{display:none!important}}
+.bw{text-align:center;margin-bottom:18px}
+.db{padding:11px 28px;background:linear-gradient(135deg,#c41e3a,#8b0000);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-left:10px;box-shadow:0 3px 12px rgba(196,30,58,.4)}
+.pb{padding:11px 28px;background:linear-gradient(135deg,#2c3e50,#34495e);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(44,62,80,.3)}
 </style>
 </head>
 <body>
-<div class=bw>
-<button class=pb id=prbtn>طباعة</button>
-<button class=db id=dlbtn>تنزيل PDF</button>
+<div class="bw">
+<button class="db" id="dlbtn">تنزيل PDF</button>
 </div>
-<div class=page id=pg>
-<div class=hdr>
-<div class=hright>
-<div class=mn>جمهورية العراق</div>
-<div class=mn>وزارة الشباب والرياضة</div>
-<div class=of>مكتب الوزير</div>
-<div class=dp>مكتب التصاريح الامنية</div>
+<div class="page" id="pg">
+<div class="hdr">
+<div class="hright">
+<div class="mn">وزارة الشباب والرياضة</div>
+<div class="of">مكتب الوزير</div>
+<div class="dp">مكتب التصاريح الامنية</div>
 </div>
-<div class=hc><img src=image.jpeg alt=logo></div>
-<div class=hl>
-<div class=fr><label>الشعبة:</label><span class=fl></span></div>
-<div class=fr><label>الوحدة:</label><span class=fl></span></div>
-<div class=fr><label>التاريخ:</label><span class=fl></span></div>
+<div class="hc">
+<img src="image.jpeg" alt="شعار وزارة الشباب والرياضة">
+</div>
+<div class="hlft">
+<div class="fr"><label>الشعبة:</label><span class="fl"></span></div>
+<div class="fr"><label>الوحدة:</label><span class="fl"></span></div>
+<div class="fr"><label>التاريخ:</label><span class="fl"></span></div>
 </div>
 </div>
-<div class=ttl>استمارة الواجبات</div>
+<div class="ttl">واجبات</div>
 <table>
 <thead>
-<tr>
-<th rowspan=2 style=background:#5b8ec7;color:white;width:5%>ت</th>
-<th rowspan=2 style=background:#5b8ec7;color:white>اسم الموظف</th>
-<th rowspan=2 style=background:#5b8ec7;color:white>العنوان الوظيفي</th>
-<th colspan=2 style=background:#5b8ec7;color:white>وقت الخروج</th>
-<th rowspan=2 style=background:#5b8ec7;color:white>اسم الجهة المقصودة بالمواجب</th>
-<th rowspan=2 style=background:#5b8ec7;color:white>الملاحظات</th>
+<tr class="mh">
+<th rowspan="2" style="background:#5b8ec7;color:white">اسم الموظف</th>
+<th rowspan="2" style="background:#5b8ec7;color:white">العنوان الوظيفي</th>
+<th colspan="2" style="background:#5b8ec7;color:white">وقت الخروج</th>
+<th rowspan="2" style="background:#5b8ec7;color:white">اسم الجهة المقصودة<br>بالواجب</th>
 </tr>
-<tr>
-<th style=background:#a8c8e8;color:#1a3a5c>من الساعة</th>
-<th style=background:#a8c8e8;color:#1a3a5c>الى الساعة</th>
+<tr class="sh">
+<th style="background:#a8c8e8;color:#1a3a5c">من الساعة</th>
+<th style="background:#a8c8e8;color:#1a3a5c">الى الساعة</th>
 </tr>
 </thead>
 <tbody>
-<tr class=er><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>4</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>6</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>7</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>8</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>9</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr class=er><td>10</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="er"><td></td><td></td><td></td><td></td><td></td></tr>
 </tbody>
 </table>
-<div class=ftr>
-<div class=fi>مسؤول الوحدة<span class=sl></span>الاسم: _______________</div>
-<div class=fi>مسؤول الشعبة<span class=sl></span>الاسم: _______________</div>
+<div class="ftr">
+<div class="fi">مسؤول الوحدة<span class="sl"></span></div>
+<div class="fi">مسؤول الشعبة<span class="sl"></span></div>
 </div>
 </div>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js></script>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-document.getElementById('prbtn').onclick=function(){window.print()};
-document.getElementById('dlbtn').onclick=async function(){
-var btn=document.getElementById('dlbtn');
-btn.textContent='جاري...';btn.disabled=true;
-try{
-var jsPDF=window.jspdf.jsPDF;
-var el=document.getElementById('pg');
-var c=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff',logging:false});
-var img=c.toDataURL('image/jpeg',0.95);
-var pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-var pw=pdf.internal.pageSize.getWidth();
-var ratio=pw/c.width;
-pdf.addImage(img,'JPEG',0,0,pw,c.height*ratio);
-pdf.save('wajib.pdf');
-}catch(e){alert('error');}
-finally{btn.textContent='تنزيل PDF';btn.disabled=false;}
+
+document.getElementById("dlbtn").onclick = async function(){
+  var btn = document.getElementById("dlbtn");
+  btn.textContent = "جاري التحضير..."; btn.disabled = true;
+  try {
+    var jsPDF = window.jspdf.jsPDF;
+    var el = document.getElementById("pg");
+    var c = await html2canvas(el, {scale:2, useCORS:true, allowTaint:true, backgroundColor:"#fff", logging:false});
+    var img = c.toDataURL("image/jpeg", 0.95);
+    var pdf = new jsPDF({orientation:"portrait", unit:"mm", format:"a4"});
+    var pw = pdf.internal.pageSize.getWidth();
+    var ratio = pw / c.width;
+    pdf.addImage(img, "JPEG", 0, 0, pw, c.height * ratio);
+    pdf.save("استمارة-واجبات.pdf");
+  } catch(e) { alert("حدث خطأ اثناء التحضير"); }
+  finally { btn.textContent = "تنزيل PDF"; btn.disabled = false; }
 };
 </script>
 </body>
