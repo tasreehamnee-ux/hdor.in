@@ -13,11 +13,15 @@ body {
   background: #e8edf2;
   padding: 20px;
   direction: rtl;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* ====== أزرار التحكم ====== */
 .controls {
-  max-width: 850px;
+  width: 100%;
+  max-width: 210mm;
   margin: 0 auto 15px;
   display: flex;
   gap: 10px;
@@ -71,19 +75,19 @@ body {
 .hc { display:flex; align-items:center; justify-content:center; width:120px; }
 .hc img { width:110px; height:110px; object-fit:contain; }
 .hlft {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  text-align: left;
+  display: block;
   padding-top: 5px;
-  width: 100%;
 }
 .fr {
-  display: flex;
+  display: inline-flex;
   align-items: flex-end;
   gap: 6px;
-  flex-direction: row;
-  width: 100%;
-  justify-content: flex-start; /* في RTL: التسمية على اليمين، والمدخل يمتد لليسار */
+  direction: rtl;
+  margin-bottom: 14px;
+}
+.fr:last-child {
+  margin-bottom: 0;
 }
 .fr label {
   font-size: 14px;
@@ -98,7 +102,7 @@ body {
   background: transparent;
   font-family: 'Cairo', sans-serif;
   font-size: 14px;
-  flex: 1; /* يمتد لملء الهامش الأيسر بالكامل */
+  width: 130px;
   padding: 2px 4px;
   text-align: center;
   color: #111;

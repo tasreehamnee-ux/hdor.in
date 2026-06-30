@@ -19,10 +19,14 @@ html = r"""<!DOCTYPE html>
             background: #e8edf2;
             direction: rtl;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         /* ===== أزرار التحكم (فوق الصفحة) ===== */
         .controls {
+            width: 100%;
             max-width: 800px;
             margin: 0 auto 15px;
             display: flex;
@@ -123,19 +127,19 @@ html = r"""<!DOCTYPE html>
 
         /* عمود يسار: الوحدة والتاريخ */
         .header-info {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
+            text-align: left;
+            display: block;
             padding-top: 5px;
-            width: 100%;
         }
         .info-row {
-            display: flex;
+            display: inline-flex;
             align-items: flex-end;
             gap: 6px;
-            flex-direction: row;
-            width: 100%;
-            justify-content: flex-start; /* في RTL: التسمية على اليمين، والمدخل يمتد لليسار */
+            direction: rtl;
+            margin-bottom: 14px;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
         }
         .info-row label {
             font-size: 14px;
@@ -150,7 +154,7 @@ html = r"""<!DOCTYPE html>
             background: transparent;
             font-family: 'Cairo', sans-serif;
             font-size: 14px;
-            flex: 1; /* يمتد لملء الهامش الأيسر بالكامل */
+            width: 130px;
             padding: 2px 4px;
             text-align: center;
             color: #111;
