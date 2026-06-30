@@ -148,8 +148,8 @@ html = r"""<!DOCTYPE html>
             background: transparent;
             font-family: 'Cairo', sans-serif;
             font-size: 14px;
-            flex: 1;
-            min-width: 80px;
+            width: 110px;
+            flex-shrink: 0;
             padding: 2px 4px;
             text-align: center;
             color: #111;
