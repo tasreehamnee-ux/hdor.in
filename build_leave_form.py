@@ -322,6 +322,7 @@ html = r"""<!DOCTYPE html>
 
             <!-- يسار: الوحدة والتاريخ -->
             <div class="header-info">
+                <!-- عمود يسار -->
                 <div class="info-row">
                     <label>الوحدة:</label>
                     <input type="text" id="unit" placeholder="">
