@@ -309,6 +309,12 @@ function setDate() {
 function saveAsPDF() {
   const ctrl = document.getElementById('controls');
   ctrl.style.display = 'none';
+  
+  // تحديث حجم كافة الحقول النصية لتناسب المحتوى تماماً قبل التصدير للـ PDF
+  document.querySelectorAll('#tbody textarea').forEach(textarea => {
+    autoGrow(textarea);
+  });
+
   const unit = document.getElementById('unitName').value || 'الوحدة';
   const date = document.getElementById('headerDate').value || '';
   const filename = `نموذج_واجب_${unit}_${date}.pdf`.replace(/\//g,'-');
