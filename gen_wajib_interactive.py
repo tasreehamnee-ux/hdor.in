@@ -240,11 +240,11 @@ td input[type="checkbox"] {
   <!-- التواقيع -->
   <div class="ftr">
     <div class="fi">
-      مسؤول الشعبة
+      مسؤول&nbsp;&nbsp;الشعبة
       <span class="sl"></span>
     </div>
     <div class="fi">
-      مسؤول الوحدة
+      مسؤول&nbsp;&nbsp;الوحدة
       <span class="sl"></span>
     </div>
   </div>

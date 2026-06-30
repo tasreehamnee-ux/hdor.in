@@ -421,8 +421,8 @@ html = r"""<!DOCTYPE html>
 
         <!-- ===== تذييل ===== -->
         <div class="footer-row">
-            <span>مسؤول الوحدة</span>
-            <span>مسؤول الشعبة</span>
+            <span>مسؤول&nbsp;&nbsp;الوحدة</span>
+            <span>مسؤول&nbsp;&nbsp;الشعبة</span>
         </div>
 
     </div><!-- end .container -->
