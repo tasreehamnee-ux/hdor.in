@@ -207,10 +207,6 @@ td input[type="checkbox"] {
         <input type="text" id="unitName" placeholder="">
       </div>
       <div class="fr">
-        <label>:الأسبوع</label>
-        <input type="text" id="weekNum" placeholder="الأول">
-      </div>
-      <div class="fr">
         <label>:التاريخ</label>
         <input type="text" id="headerDate" placeholder="">
       </div>
@@ -218,18 +214,22 @@ td input[type="checkbox"] {
   </div>
 
   <!-- عنوان -->
-  <div class="ttl">استمارة الواجبات الأسبوعية</div>
+  <div class="ttl">نموذج واجب</div>
 
   <!-- الجدول -->
   <table>
     <thead>
       <tr class="mh">
-        <th>ت</th>
-        <th>الاسم الثلاثي</th>
-        <th>الرتبة / الوظيفة</th>
-        <th>الواجب الأسبوعي</th>
-        <th>ملاحظات</th>
-        <th>الحضور</th>
+        <th rowspan="2" style="width: 5%;">ت</th>
+        <th rowspan="2" style="width: 25%;">اسم الموظف</th>
+        <th rowspan="2" style="width: 20%;">العنوان الوظيفي</th>
+        <th colspan="2" style="width: 20%;">وقت الخروج</th>
+        <th rowspan="2" style="width: 20%;">اسم الجهة المقصودة بالواجب</th>
+        <th rowspan="2" style="width: 10%;">ملاحظات</th>
+      </tr>
+      <tr class="sh">
+        <th>من الساعة</th>
+        <th>الى الساعة</th>
       </tr>
     </thead>
     <tbody id="tbody">
@@ -253,7 +253,7 @@ td input[type="checkbox"] {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-const ROWS = 15; // عدد الصفوف
+const ROWS = 10; // عدد الصفوف في نموذج الواجب الأصلي
 
 // بناء صفوف الجدول
 function buildTable() {
@@ -265,10 +265,11 @@ function buildTable() {
     tr.innerHTML = `
       <td>${i}</td>
       <td><input type="text" id="name${i}" placeholder=""></td>
-      <td><input type="text" id="rank${i}" placeholder=""></td>
-      <td><input type="text" id="duty${i}" placeholder=""></td>
+      <td><input type="text" id="title${i}" placeholder=""></td>
+      <td><input type="text" id="time_from${i}" placeholder=""></td>
+      <td><input type="text" id="time_to${i}" placeholder=""></td>
+      <td><input type="text" id="destination${i}" placeholder=""></td>
       <td><input type="text" id="note${i}" placeholder=""></td>
-      <td><input type="checkbox" id="att${i}" title="حاضر"></td>
     `;
     tb.appendChild(tr);
   }
@@ -289,7 +290,7 @@ function saveAsPDF() {
   ctrl.style.display = 'none';
   const unit = document.getElementById('unitName').value || 'الوحدة';
   const date = document.getElementById('headerDate').value || '';
-  const filename = `واجبات_${unit}_${date}.pdf`.replace(/\//g,'-');
+  const filename = `نموذج_واجب_${unit}_${date}.pdf`.replace(/\//g,'-');
   const opt = {
     margin:       [8,10,10,10],
     filename:     filename,
@@ -305,20 +306,19 @@ function saveAsPDF() {
 function resetForm() {
   if (!confirm('هل تريد مسح جميع البيانات؟')) return;
   document.getElementById('unitName').value = '';
-  document.getElementById('weekNum').value = 'الأول';
   setDate();
   for (let i=1; i<=ROWS; i++) {
     document.getElementById('name'+i).value = '';
-    document.getElementById('rank'+i).value = '';
-    document.getElementById('duty'+i).value = '';
+    document.getElementById('title'+i).value = '';
+    document.getElementById('time_from'+i).value = '';
+    document.getElementById('time_to'+i).value = '';
+    document.getElementById('destination'+i).value = '';
     document.getElementById('note'+i).value = '';
-    document.getElementById('att'+i).checked = false;
   }
 }
 
 buildTable();
 setDate();
-document.getElementById('weekNum').value = 'الأول';
 </script>
 </body>
 </html>
