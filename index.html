@@ -193,38 +193,50 @@
                     <input type="text" class="form-input" id="unitName" placeholder="أدخل اسم الوحدة أو القسم" required>
                 </div>
                 <div class="form-group" style="margin-bottom: 18px;">
-                    <label class="form-label">📋 استمارة الواجبات</label>
-                    <a href="wajib-form.html" target="_blank" style="display: flex; align-items: center; gap: 12px; padding: 15px 18px; background: linear-gradient(135deg, #1a3a5c 0%, #2e5b8a 100%); color: white; text-decoration: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 15px rgba(26,58,92,0.35); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                        <span style="font-size: 2rem;">📥</span>
-                        <div>
-                            <div>تنزيل استمارة الواجبات</div>
-                            <div style="font-size: 0.8rem; font-weight: 400; opacity: 0.85;">اضغط هنا لفتح الاستمارة وتنزيلها كـ PDF</div>
-                        </div>
-                        <span style="margin-right: auto; font-size: 1.3rem;">⬅️</span>
-                    </a>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">📎 المرفقات <span style="color: #999; font-weight: 400;">(اختياري - PDF)</span></label>
-                    <div style="border: 2px dashed #ccc; border-radius: 12px; padding: 20px; text-align: center; background: #fafafa; cursor: pointer; transition: all 0.3s;" id="attachmentDropZone" onclick="document.getElementById('attachmentInput').click()">
-                        <div style="font-size: 2.5rem; margin-bottom: 10px;">📄</div>
-                        <div style="font-weight: 700; color: #666; margin-bottom: 5px;">اضغط هنا لاختيار ملف PDF</div>
-                        <div style="font-size: 0.85rem; color: #999;">أو اسحب الملف هنا</div>
-                        <input type="file" id="attachmentInput" accept=".pdf,application/pdf" style="display: none;" onchange="handleAttachmentSelect(event)">
-                    </div>
-                    <div id="attachmentPreview" style="display: none; margin-top: 10px; padding: 10px; background: #d5f4e6; border-radius: 8px; border: 1px solid #27ae60;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 1.5rem;">📎</span>
-                            <div style="flex: 1;">
-                                <div id="attachmentName" style="font-weight: 700; color: #27ae60;"></div>
-                                <div id="attachmentSize" style="font-size: 0.8rem; color: #666;"></div>
+                    <label class="form-label">📋 الاستمارات والمرفقات</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <!-- زر واجبات -->
+                        <a href="wajib-form.html" target="_blank" style="flex:1; min-width:130px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 10px; background: linear-gradient(135deg, #1a3a5c 0%, #2e5b8a 100%); color: white; text-decoration: none; border-radius: 10px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.88rem; box-shadow: 0 3px 10px rgba(26,58,92,0.35); transition: transform 0.2s; text-align:center;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                            <span style="font-size: 1.4rem;">📋</span>
+                            <div>
+                                <div>استمارة الواجبات</div>
+                                <div style="font-size: 0.7rem; font-weight: 400; opacity: 0.85;">فتح وتعبئة</div>
                             </div>
-                            <button type="button" onclick="removeAttachment()" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 1rem;">✕</button>
+                        </a>
+                        <!-- زر طلب إجازة -->
+                        <a href="طلب اجازة.html" target="_blank" style="flex:1; min-width:130px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 10px; background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%); color: white; text-decoration: none; border-radius: 10px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.88rem; box-shadow: 0 3px 10px rgba(39,174,96,0.35); transition: transform 0.2s; text-align:center;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                            <span style="font-size: 1.4rem;">📝</span>
+                            <div>
+                                <div>طلب إجازة</div>
+                                <div style="font-size: 0.7rem; font-weight: 400; opacity: 0.85;">فتح وتعبئة</div>
+                            </div>
+                        </a>
+                        <!-- زر رفع ملف PDF -->
+                        <div style="flex:1; min-width:130px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 10px; background: linear-gradient(135deg, #e67e22 0%, #ca6f1e 100%); color: white; border-radius: 10px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.88rem; box-shadow: 0 3px 10px rgba(230,126,34,0.35); cursor: pointer; transition: transform 0.2s; text-align:center;" onclick="document.getElementById('attachmentInput').click()" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                            <span style="font-size: 1.4rem;">📎</span>
+                            <div>
+                                <div id="attachBtnLabel">إرفاق ملف PDF</div>
+                                <div style="font-size: 0.7rem; font-weight: 400; opacity: 0.85;" id="attachBtnSub">اختياري</div>
+                            </div>
+                            <input type="file" id="attachmentInput" accept=".pdf,application/pdf" style="display: none;" onchange="handleAttachmentSelect(event)">
                         </div>
                     </div>
-                    <button type="button" id="sendAttachmentBtn" onclick="sendAttachmentToWhatsApp()" style="display: none; margin-top: 10px; width: 100%; padding: 14px; background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; align-items: center; justify-content: center; gap: 8px;">
-                        <span>📤</span> إرسال المرفق إلى الواتساب
+                    <!-- معاينة المرفق -->
+                    <div id="attachmentPreview" style="display: none; margin-top: 8px; padding: 8px 12px; background: #d5f4e6; border-radius: 8px; border: 1px solid #27ae60; display: none;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.3rem;">📎</span>
+                            <div style="flex: 1;">
+                                <div id="attachmentName" style="font-weight: 700; color: #27ae60; font-size: 0.9rem;"></div>
+                                <div id="attachmentSize" style="font-size: 0.75rem; color: #666;"></div>
+                            </div>
+                            <button type="button" onclick="removeAttachment()" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center;">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" id="sendAttachmentBtn" onclick="sendAttachmentToWhatsApp()" style="display: none; margin-top: 8px; width: 100%; padding: 12px; background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: white; border: none; border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer;">
+                        📤 إرسال المرفق إلى الواتساب
                     </button>
                 </div>
+
                 <div class="form-group">
                     <label class="form-label"><span class="required">*</span>تاريخ بداية الأسبوع (ميلادي / هجري)</label>
                     <div class="date-picker-wrapper">
@@ -807,9 +819,12 @@
             document.getElementById('attachmentName').textContent = file.name;
             document.getElementById('attachmentSize').textContent = formatFileSize(file.size);
             document.getElementById('attachmentPreview').style.display = 'block';
-            document.getElementById('sendAttachmentBtn').style.display = 'flex';
-            document.getElementById('attachmentDropZone').style.borderColor = '#27ae60';
-            document.getElementById('attachmentDropZone').style.background = '#f0fff4';
+            document.getElementById('sendAttachmentBtn').style.display = 'block';
+            // تحديث نص زر المرفق
+            if (document.getElementById('attachBtnLabel')) {
+                document.getElementById('attachBtnLabel').textContent = '✅ ' + (file.name.length > 14 ? file.name.substring(0, 14) + '…' : file.name);
+                document.getElementById('attachBtnSub').textContent = formatFileSize(file.size);
+            }
             showToast('✅ تم اختيار الملف: ' + file.name);
         }
 
@@ -818,8 +833,11 @@
             document.getElementById('attachmentInput').value = '';
             document.getElementById('attachmentPreview').style.display = 'none';
             document.getElementById('sendAttachmentBtn').style.display = 'none';
-            document.getElementById('attachmentDropZone').style.borderColor = '#ccc';
-            document.getElementById('attachmentDropZone').style.background = '#fafafa';
+            // إعادة نص الزر
+            if (document.getElementById('attachBtnLabel')) {
+                document.getElementById('attachBtnLabel').textContent = 'إرفاق ملف PDF';
+                document.getElementById('attachBtnSub').textContent = 'اختياري';
+            }
             showToast('🗑️ تم إزالة الملف المرفق');
         }
 
