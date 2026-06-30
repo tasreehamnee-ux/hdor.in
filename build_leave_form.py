@@ -346,10 +346,6 @@ html = r"""<!DOCTYPE html>
                 <input type="checkbox" id="annual" name="leaveType" onchange="onlyOne(this)">
             </div>
             <div class="checkbox-item">
-                <label for="sick">عارضة</label>
-                <input type="checkbox" id="sick" name="leaveType" onchange="onlyOne(this)">
-            </div>
-            <div class="checkbox-item">
                 <label for="medical">مرضية</label>
                 <input type="checkbox" id="medical" name="leaveType" onchange="onlyOne(this)">
             </div>
@@ -409,15 +405,7 @@ html = r"""<!DOCTYPE html>
             <input type="text" id="replacementSig" style="width:190px;">
         </div>
 
-        <!-- ===== موافقة مسؤول الشعبة ===== -->
-        <div class="form-row" style="margin-top:22px;">
-            <label>موافقة مسؤول الشعبة :</label>
-            <input type="text" id="managerApproval" style="width:230px;">
-        </div>
-        <div class="form-row">
-            <label>التاريخ :</label>
-            <input type="text" id="managerDate" style="width:140px;">
-        </div>
+
 
         <!-- ===== تذييل ===== -->
         <div class="footer-row">
