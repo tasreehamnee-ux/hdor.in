@@ -393,12 +393,6 @@ html = r"""<!DOCTYPE html>
             <input type="text" id="returnDate" style="width:130px;">
         </div>
 
-        <!-- ===== عنوان أثناء الأجازة ===== -->
-        <div class="form-row">
-            <label>وعنوانى أثناء الأجازة :</label>
-            <input type="text" id="leaveAddress" class="input-flex">
-        </div>
-
         <!-- ===== التوقيع وتقديم الطلب ===== -->
         <div class="form-row">
             <label>توقيع مقدم الطلب :</label>
@@ -407,7 +401,7 @@ html = r"""<!DOCTYPE html>
             <input type="text" id="submitDate" style="width:130px;">
         </div>
         <div class="form-row">
-            <label>اسم القائم بالعمل اثناء الاجازة :</label>
+            <label>اسم البديل :</label>
             <input type="text" id="replacement" class="input-flex">
         </div>
         <div class="form-row">
