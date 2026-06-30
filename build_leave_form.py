@@ -365,9 +365,11 @@ html = r"""<!DOCTYPE html>
 
         <!-- ===== طلب الموافقة ===== -->
         <div class="form-row">
-            <label>ارجو الموافقة على منحى الأجازة الموضحة عاليه لمدة (</label>
-            <input type="number" id="leaveDays" style="width:50px;">
-            <label>) يوم</label>
+            <label>ارجو الموافقة على منحى الأجازة الموضحة عاليه لمدة</label>
+            <span style="direction: ltr; display: inline-flex; align-items: center; margin: 0 5px;">
+                (&nbsp;<input type="number" id="leaveDays" style="width:50px; text-align: center; border: none; border-bottom: 1.5px solid #1a3a5c; background: transparent; font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: bold;">&nbsp;)
+            </span>
+            <label>يوم</label>
         </div>
 
         <!-- ===== تواريخ الأجازة ===== -->
