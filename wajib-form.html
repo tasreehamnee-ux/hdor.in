@@ -154,9 +154,12 @@ td textarea {
   font-weight: bold;
   text-align: center;
   color: #111;
-  padding: 2px;
+  padding: 4px 2px;
   resize: none;
   min-height: 28px;
+  overflow: hidden;
+  display: block;
+  box-sizing: border-box;
 }
 td input[type="text"]:focus,
 td input[type="number"]:focus,
@@ -267,6 +270,12 @@ td input[type="checkbox"] {
 <script>
 const ROWS = 10; // عدد الصفوف في نموذج الواجب الأصلي
 
+// وظيفة زيادة ارتفاع الحقل تلقائياً مع حجم النص
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 // بناء صفوف الجدول
 function buildTable() {
   const tb = document.getElementById('tbody');
@@ -276,12 +285,12 @@ function buildTable() {
     tr.className = 'er';
     tr.innerHTML = `
       <td>${i}</td>
-      <td><input type="text" id="name${i}" placeholder=""></td>
-      <td><input type="text" id="title${i}" placeholder=""></td>
-      <td><input type="text" id="time_from${i}" placeholder=""></td>
-      <td><input type="text" id="time_to${i}" placeholder=""></td>
-      <td><input type="text" id="destination${i}" placeholder=""></td>
-      <td><input type="text" id="note${i}" placeholder=""></td>
+      <td><textarea id="name${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
+      <td><textarea id="title${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
+      <td><textarea id="time_from${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
+      <td><textarea id="time_to${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
+      <td><textarea id="destination${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
+      <td><textarea id="note${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
     `;
     tb.appendChild(tr);
   }
