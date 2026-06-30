@@ -488,7 +488,7 @@ html = r"""<!DOCTYPE html>
 </html>
 """
 
-html = html.replace('LOGO_PLACEHOLDER', LOGO)
+html = html.replace('LOGO_PLACEHOLDER', f'data:image/jpeg;base64,{LOGO}')
 
 filename = '\u0637\u0644\u0628 \u0627\u062c\u0627\u0632\u0629.html'
 with open(filename, 'w', encoding='utf-8') as f:
