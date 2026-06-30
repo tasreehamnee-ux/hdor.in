@@ -401,6 +401,8 @@ html = r"""<!DOCTYPE html>
         <div class="form-row">
             <label>اسم البديل :</label>
             <input type="text" id="replacement" class="input-flex">
+            <label style="margin-right: 15px;">العنوان الوظيفي للبديل :</label>
+            <input type="text" id="replacementJob" style="width: 180px;">
         </div>
         <div class="form-row">
             <label>التوقيع</label>
