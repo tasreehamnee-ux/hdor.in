@@ -127,14 +127,15 @@ html = r"""<!DOCTYPE html>
             flex-direction: column;
             gap: 14px;
             padding-top: 5px;
-            align-items: flex-end;   /* محاذاة لليسار (نهاية RTL) */
+            width: 100%;
         }
         .info-row {
             display: flex;
             align-items: flex-end;
             gap: 6px;
             flex-direction: row;
-            justify-content: flex-end;  /* يدفع المحتوى لليسار في RTL */
+            width: 100%;
+            justify-content: flex-start; /* في RTL: التسمية على اليمين، والمدخل يمتد لليسار */
         }
         .info-row label {
             font-size: 14px;
@@ -149,8 +150,7 @@ html = r"""<!DOCTYPE html>
             background: transparent;
             font-family: 'Cairo', sans-serif;
             font-size: 14px;
-            width: 110px;
-            flex-shrink: 0;
+            flex: 1; /* يمتد لملء الهامش الأيسر بالكامل */
             padding: 2px 4px;
             text-align: center;
             color: #111;
