@@ -400,7 +400,7 @@ html = r"""<!DOCTYPE html>
             <label style="margin-right: 15px;">العنوان الوظيفي للبديل:</label>
             <input type="text" id="replacementJob" style="width: 180px;">
         </div>
-        <div class="form-row">
+        <div class="form-row" style="margin-bottom: 45px;">
             <label>التوقيع:</label>
             <input type="text" id="replacementSig" style="width:190px;">
         </div>
