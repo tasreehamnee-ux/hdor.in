@@ -376,7 +376,7 @@ html = r"""<!DOCTYPE html>
 
         <!-- ===== تواريخ الأجازة ===== -->
         <div class="form-row" style="flex-wrap:nowrap; gap:5px;">
-            <label>ابتداء من يوم</label>
+            <label>ابتداء&nbsp;من&nbsp;يوم</label>
             <input type="text" id="startDay" style="width:80px;">
             <label>الموافق :</label>
             <input type="text" id="startDate" style="width:95px;">
