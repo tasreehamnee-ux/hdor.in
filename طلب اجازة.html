@@ -118,27 +118,24 @@
 
         /* عمود يسار: الوحدة والتاريخ */
         .header-info {
-            text-align: left;
             display: flex;
             flex-direction: column;
             gap: 14px;
-            align-items: flex-start;
             padding-top: 5px;
-            padding-left: 4px;
         }
         .info-row {
             display: flex;
             align-items: flex-end;
             gap: 6px;
             width: 100%;
-            justify-content: flex-end;
+            flex-direction: row;          /* label يمين، input يسار */
         }
         .info-row label {
             font-size: 14px;
             font-weight: 700;
             color: #1a3a5c;
             white-space: nowrap;
-            order: 2;
+            flex-shrink: 0;
         }
         .info-row input {
             border: none;
@@ -146,11 +143,11 @@
             background: transparent;
             font-family: 'Cairo', sans-serif;
             font-size: 14px;
-            width: 130px;
+            flex: 1;
+            min-width: 80px;
             padding: 2px 4px;
             text-align: center;
             color: #111;
-            order: 1;
         }
         .info-row input:focus { outline: none; border-bottom: 2px solid #c41e3a; }
 
@@ -295,7 +292,6 @@
     <!-- أزرار التحكم -->
     <div class="controls" id="controls">
         <button class="btn btn-save" onclick="saveAsPDF()">💾 حفظ كـ PDF</button>
-        <button class="btn btn-print" onclick="printForm()">🖨️ طباعة</button>
         <button class="btn btn-reset" onclick="resetForm()">🔄 إعادة تعيين</button>
     </div>
 
@@ -319,12 +315,12 @@
             <!-- يسار: الوحدة والتاريخ -->
             <div class="header-info">
                 <div class="info-row">
-                    <input type="text" id="unit" placeholder="">
                     <label>:الوحدة</label>
+                    <input type="text" id="unit" placeholder="">
                 </div>
                 <div class="info-row">
-                    <input type="text" id="headerDate" placeholder="">
                     <label>:التاريخ</label>
+                    <input type="text" id="headerDate" placeholder="">
                 </div>
             </div>
         </div>
