@@ -197,6 +197,8 @@
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
+            border-bottom: 1.5px solid #333;
+            padding-bottom: 2px;
         }
 
         /* ===== حقول الاستمارة ===== */
@@ -216,7 +218,7 @@
         .form-row input[type="text"],
         .form-row input[type="number"] {
             border: none;
-            border-bottom: 1px dotted #555;
+            border-bottom: 1.5px solid #333;
             background: transparent;
             font-family: 'Cairo', sans-serif;
             font-size: 14px;
@@ -229,7 +231,10 @@
             outline: none;
             border-bottom: 2px solid #c41e3a;
         }
-        .input-flex { flex: 1; min-width: 80px; }
+        .input-flex { flex: 1; min-width: 80px; max-width: 100%; box-sizing: border-box; }
+        .full-input-row { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+        .full-input-row label { font-weight: 700; font-size: 14px; color: #000; white-space: nowrap; flex-shrink: 0; }
+        .full-input-row input { flex: 1; border: none; border-bottom: 1.5px solid #333; background: transparent; font-family: 'Cairo', sans-serif; font-size: 14px; padding: 3px 6px; color: #111; min-width: 0; }
 
         /* ===== قسم التواقيع ===== */
         .sig-section {
@@ -286,7 +291,7 @@
             body { background: white; padding: 0; }
             .container { box-shadow: none; border: none; max-width: 100%; }
             .controls { display: none !important; }
-            .info-row input, .form-row input { border-bottom-style: solid !important; }
+            .info-row input, .form-row input, .full-input-row input { border-bottom: 1.5px solid #333 !important; }
         }
     </style>
 </head>
@@ -347,13 +352,13 @@
             </div>
         </div>
 
-        <div class="form-row">
+        <div class="full-input-row">
             <label>الاسم:</label>
-            <input type="text" id="fullName" class="input-flex">
+            <input type="text" id="fullName">
         </div>
-        <div class="form-row">
+        <div class="full-input-row">
             <label>الوظيفة:</label>
-            <input type="text" id="jobTitle" class="input-flex">
+            <input type="text" id="jobTitle">
         </div>
 
         <!-- ===== طلب الموافقة ===== -->
@@ -375,12 +380,7 @@
             <input type="text" id="endDay" style="width:80px;">
             <input type="text" id="endDate" style="width:95px;">
         </div>
-        <div class="form-row">
-            <label>تاريخ العودة للعمل يوم</label>
-            <input type="text" id="returnDay" style="width:120px;">
-            <label>الموافق:</label>
-            <input type="text" id="returnDate" style="width:130px;">
-        </div>
+
 
         <!-- ===== التوقيع وتقديم الطلب ===== -->
         <div class="form-row">
