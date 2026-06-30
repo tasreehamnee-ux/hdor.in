@@ -77,26 +77,39 @@ body {
 .hc { display:flex; align-items:center; justify-content:center; width:120px; }
 .hc img { width:110px; height:110px; object-fit:contain; }
 .hlft {
-  display:flex; flex-direction:column; gap:16px;
-  justify-content:center; padding-top:5px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 5px;
+  align-items: flex-end;   /* محاذاة لليسار في RTL */
 }
 .fr {
-  font-size: 15px; font-weight: 700;
-  display: flex; align-items: flex-end; gap: 6px; width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-direction: row;
+  justify-content: flex-end;  /* يدفع المحتوى لليسار في RTL */
 }
-.fr label { white-space:nowrap; color:#1a3a5c; flex-shrink:0; }
+.fr label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a3a5c;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .fr input {
   border: none;
   border-bottom: 1.5px solid #1a3a5c;
   background: transparent;
-  font-family: "Noto Naskh Arabic", sans-serif;
+  font-family: 'Cairo', sans-serif;
   font-size: 14px;
   width: 110px;
+  flex-shrink: 0;
   padding: 2px 4px;
   text-align: center;
   color: #111;
 }
-.fr input:focus { outline:none; border-bottom: 2px solid #c41e3a; }
+.fr input:focus { outline: none; border-bottom: 2px solid #c41e3a; }
 
 /* ====== عنوان الاستمارة ====== */
 .ttl {
