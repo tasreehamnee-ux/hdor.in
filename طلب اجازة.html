@@ -122,13 +122,14 @@
             flex-direction: column;
             gap: 14px;
             padding-top: 5px;
+            align-items: flex-end;   /* محاذاة لليسار (نهاية RTL) */
         }
         .info-row {
             display: flex;
             align-items: flex-end;
             gap: 6px;
-            width: 100%;
-            flex-direction: row;          /* label يمين، input يسار */
+            flex-direction: row;
+            justify-content: flex-end;  /* يدفع المحتوى لليسار في RTL */
         }
         .info-row label {
             font-size: 14px;
