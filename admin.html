@@ -354,11 +354,15 @@
                 const uniqueUnits = new Set(allSubmissions.map(s => s.unitName));
                 document.getElementById('statTotalUnits').textContent = uniqueUnits.size;
 
-                let totalWeeks = 0;
+                const uniqueWeeksKeys = new Set();
                 allSubmissions.forEach(s => {
-                    if (s.weeks) totalWeeks += Object.keys(s.weeks).length;
+                    if (s.weeks && s.unitName) {
+                        Object.keys(s.weeks).forEach(wNum => {
+                            uniqueWeeksKeys.add(`${s.unitName}_${wNum}`);
+                        });
+                    }
                 });
-                document.getElementById('statTotalWeeks').textContent = totalWeeks;
+                document.getElementById('statTotalWeeks').textContent = uniqueWeeksKeys.size;
 
                 // Render with current filter
                 filterAndRenderTable();
@@ -698,27 +702,39 @@
                 const weeksGroup = { 1: [], 2: [], 3: [], 4: [] };
                 submissions.sort((a, b) => a.id - b.id);
 
+                const latestWeeks = {};
                 submissions.forEach(sub => {
                     const submittedAt = new Date(sub.submittedAt || sub.id).toLocaleString('ar-SA');
                     if (sub.weeks) {
                         Object.values(sub.weeks).forEach(week => {
                             if (week && week.employees) {
                                 const weekNum = week.weekNumber;
-                                if (weeksGroup[weekNum]) {
-                                    week.employees.forEach(emp => {
-                                        weeksGroup[weekNum].push({
-                                            submittedAt: submittedAt,
-                                            unitName: sub.unitName,
-                                            startDate: week.startDate,
-                                            endDate: week.endDate,
-                                            name: emp.name,
-                                            shift: emp.shift || 'morning',
-                                            days: emp.days,
-                                            notes: week.notes || ''
-                                        });
-                                    });
-                                }
+                                const key = `${sub.unitName}_${weekNum}`;
+                                latestWeeks[key] = {
+                                    submittedAt: submittedAt,
+                                    unitName: sub.unitName,
+                                    week: week
+                                };
                             }
+                        });
+                    }
+                });
+
+                Object.values(latestWeeks).forEach(item => {
+                    const week = item.week;
+                    const weekNum = week.weekNumber;
+                    if (weeksGroup[weekNum]) {
+                        week.employees.forEach(emp => {
+                            weeksGroup[weekNum].push({
+                                submittedAt: item.submittedAt,
+                                unitName: item.unitName,
+                                startDate: week.startDate,
+                                endDate: week.endDate,
+                                name: emp.name,
+                                shift: emp.shift || 'morning',
+                                days: emp.days,
+                                notes: week.notes || ''
+                            });
                         });
                     }
                 });
@@ -799,25 +815,36 @@
 
                 submissions.sort((a, b) => a.id - b.id);
 
+                const latestWeeks = {};
                 submissions.forEach(sub => {
                     if (sub.weeks) {
                         Object.values(sub.weeks).forEach(week => {
                             if (week && week.employees) {
                                 const weekNum = week.weekNumber;
-                                if (weeksGroup[weekNum]) {
-                                    week.employees.forEach(emp => {
-                                        weeksGroup[weekNum].push({
-                                            unitName: sub.unitName,
-                                            name: emp.name,
-                                            days: emp.days,
-                                            shift: emp.shift || 'morning',
-                                            startDate: week.startDate,
-                                            endDate: week.endDate
-                                        });
-                                        totalEmployeesCount++;
-                                    });
-                                }
+                                const key = `${sub.unitName}_${weekNum}`;
+                                latestWeeks[key] = {
+                                    unitName: sub.unitName,
+                                    week: week
+                                };
                             }
+                        });
+                    }
+                });
+
+                Object.values(latestWeeks).forEach(item => {
+                    const week = item.week;
+                    const weekNum = week.weekNumber;
+                    if (weeksGroup[weekNum]) {
+                        week.employees.forEach(emp => {
+                            weeksGroup[weekNum].push({
+                                unitName: item.unitName,
+                                name: emp.name,
+                                days: emp.days,
+                                shift: emp.shift || 'morning',
+                                startDate: week.startDate,
+                                endDate: week.endDate
+                            });
+                            totalEmployeesCount++;
                         });
                     }
                 });

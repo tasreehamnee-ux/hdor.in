@@ -397,6 +397,46 @@ const upload = multer({
 });
 
 // API 1: Submit new data
+// Helper to update governorate compiled file
+async function updateGovernorateFile(unitName, newWeeks) {
+  try {
+    const govDir = path.join(__dirname, '../uploads/governorates');
+    if (!fs.existsSync(govDir)) {
+      fs.mkdirSync(govDir, { recursive: true });
+    }
+    
+    // Normalize unitName for safe filename
+    const safeUnitName = unitName.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+    const filepath = path.join(govDir, `${safeUnitName}.json`);
+    
+    let compiledWeeks = {};
+    if (fs.existsSync(filepath)) {
+      try {
+        const raw = fs.readFileSync(filepath, 'utf8');
+        compiledWeeks = JSON.parse(raw || '{}');
+      } catch (e) {
+        console.error('Error reading governorate file:', e);
+      }
+    }
+    
+    // Merge new weeks
+    if (newWeeks && typeof newWeeks === 'object') {
+      Object.keys(newWeeks).forEach(key => {
+        const val = newWeeks[key];
+        if (val !== null && val !== undefined) {
+          compiledWeeks[key] = val;
+        }
+      });
+    }
+    
+    fs.writeFileSync(filepath, JSON.stringify(compiledWeeks, null, 2), 'utf8');
+    console.log(`Updated governorate file for ${unitName} at ${filepath}`);
+  } catch (err) {
+    console.error('Failed to update governorate file:', err);
+  }
+}
+
+// API 1: Submit new data
 app.post('/api/submissions', upload.single('attachment'), async (req, res) => {
   try {
     const { unitName, startDate, endDate, weeks, notes } = req.body;
@@ -456,6 +496,7 @@ app.post('/api/submissions', upload.single('attachment'), async (req, res) => {
     }
 
     await saveSubmission(newSubmission);
+    await updateGovernorateFile(unitName, parsedWeeks);
 
     // Exclude heavy base64 file data from the immediate return payload
     const returnData = { ...newSubmission };
@@ -467,6 +508,22 @@ app.post('/api/submissions', upload.single('attachment'), async (req, res) => {
   } catch (error) {
     console.error('Submission error:', error);
     res.status(500).json({ success: false, message: 'Server error: ' + error.message });
+  }
+});
+
+// API 1b: Get compiled governorate file
+app.get('/api/governorates/:name', (req, res) => {
+  try {
+    const name = req.params.name;
+    const safeUnitName = name.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+    const filepath = path.join(__dirname, `../uploads/governorates/${safeUnitName}.json`);
+    if (!fs.existsSync(filepath)) {
+      return res.status(404).json({ success: false, message: 'Governorate file not found' });
+    }
+    const raw = fs.readFileSync(filepath, 'utf8');
+    res.json({ success: true, data: JSON.parse(raw || '{}') });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
