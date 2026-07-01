@@ -334,11 +334,6 @@ td input[type="checkbox"] {
       </select>
     </div>
     
-    <div class="form-group col-small">
-      <label for="entryUnit">الوحدة</label>
-      <input type="text" id="entryUnit" placeholder="اسم الوحدة" oninput="document.getElementById('unitName').value = this.value">
-    </div>
-    
     <div class="form-group">
       <label for="entryName">اسم الموظف</label>
       <input type="text" id="entryName" placeholder="أدخل اسم الموظف">
@@ -347,6 +342,16 @@ td input[type="checkbox"] {
     <div class="form-group">
       <label for="entryTitle">العنوان الوظيفي</label>
       <input type="text" id="entryTitle" placeholder="أدخل العنوان الوظيفي">
+    </div>
+
+    <div class="form-group">
+      <label for="entryDestination">اسم الجهة المقصودة بالواجب</label>
+      <input type="text" id="entryDestination" placeholder="أدخل جهة الواجب">
+    </div>
+    
+    <div class="form-group col-small">
+      <label for="entryUnit">الوحدة</label>
+      <input type="text" id="entryUnit" placeholder="اسم الوحدة" oninput="document.getElementById('unitName').value = this.value">
     </div>
     
     <div class="form-group col-small">
@@ -357,11 +362,6 @@ td input[type="checkbox"] {
     <div class="form-group col-small">
       <label for="entryTimeTo">إلى الساعة</label>
       <input type="text" id="entryTimeTo" placeholder="مثال: 02:00 م">
-    </div>
-    
-    <div class="form-group">
-      <label for="entryDestination">اسم الجهة المقصودة بالواجب</label>
-      <input type="text" id="entryDestination" placeholder="أدخل جهة الواجب">
     </div>
     
     <div class="form-group">
@@ -588,6 +588,7 @@ function loadRowToContactForm() {
 function showPreview() {
   const pg = document.getElementById('pg');
   const btn = document.getElementById('btnPreview');
+  const entryCard = document.getElementById('entryCard');
   if (pg.classList.contains('preview-hidden')) {
     pg.classList.remove('preview-hidden');
     if (btn) {
@@ -595,20 +596,26 @@ function showPreview() {
       btn.style.background = 'linear-gradient(135deg,#c41e3a,#9a1830)';
     }
   }
+  if (entryCard) {
+    entryCard.style.display = 'none';
+  }
 }
 
 // تبديل حالة المعاينة (عرض/إخفاء)
 function togglePreview() {
   const pg = document.getElementById('pg');
   const btn = document.getElementById('btnPreview');
+  const entryCard = document.getElementById('entryCard');
   if (pg.classList.contains('preview-hidden')) {
     pg.classList.remove('preview-hidden');
     btn.innerHTML = '👁️ إخفاء المعاينة';
     btn.style.background = 'linear-gradient(135deg,#c41e3a,#9a1830)';
+    if (entryCard) entryCard.style.display = 'none';
   } else {
     pg.classList.add('preview-hidden');
     btn.innerHTML = '👁️ عرض المعاينة';
     btn.style.background = 'linear-gradient(135deg,#2a5a8c,#1a3a5c)';
+    if (entryCard) entryCard.style.display = 'block';
   }
 }
 
