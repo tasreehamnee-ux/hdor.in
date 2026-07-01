@@ -245,7 +245,9 @@
 
         .header-info {
             text-align: left;
-            display: block;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
             padding-top: 5px;
         }
         .info-row {
@@ -254,6 +256,9 @@
             gap: 6px;
             direction: rtl;
             margin-bottom: 14px;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
         }
         .info-row label {
             font-size: 14px;
@@ -460,6 +465,10 @@
                         <input type="text" id="jobTitle_in" placeholder="مثال: معاون مهندس">
                     </div>
                     <div class="form-group">
+                        <label>الوحدة / القسم</label>
+                        <input type="text" id="unitName_in" placeholder="أدخل اسم الوحدة أو القسم">
+                    </div>
+                    <div class="form-group full-width">
                         <label>تاريخ تقديم الطلب</label>
                         <input type="text" id="submitDate_in" placeholder="يوم/شهر/سنة">
                     </div>
@@ -540,8 +549,12 @@
                     </div>
                     <div class="header-info">
                         <div class="info-row">
+                            <label>الوحدة:</label>
+                            <input type="text" id="unitName" style="width: 120px;">
+                        </div>
+                        <div class="info-row">
                             <label>التاريخ:</label>
-                            <input type="text" id="headerDate" style="width: 100px;">
+                            <input type="text" id="headerDate" style="width: 120px;">
                         </div>
                     </div>
                 </div>
@@ -635,7 +648,7 @@
         // مزامنة الحقول النصية تلقائياً
         const syncInputs = [
             'fullName', 'jobTitle', 'leaveDays', 'startDay', 'startDate', 
-            'endDay', 'endDate', 'headerDate'
+            'endDay', 'endDate', 'headerDate', 'unitName'
         ];
 
         syncInputs.forEach(id => {
