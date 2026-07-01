@@ -294,6 +294,11 @@ td input[type="checkbox"] {
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
+.page.preview-hidden {
+  display: none !important;
+}
+.btn-preview { background: linear-gradient(135deg,#2a5a8c,#1a3a5c); color:white; }
+.btn-preview:hover { filter:brightness(1.1); transform:translateY(-1px); }
 </style>
 </head>
 <body>
@@ -301,6 +306,7 @@ td input[type="checkbox"] {
 <!-- أزرار التحكم -->
 <div class="controls" id="controls">
   <button class="btn btn-save" onclick="saveAsPDF()">💾 حفظ كـ PDF</button>
+  <button class="btn btn-preview" id="btnPreview" onclick="togglePreview()">👁️ عرض المعاينة</button>
   <button class="btn btn-reset" onclick="resetForm()">🔄 إعادة تعيين</button>
 </div>
 
@@ -364,7 +370,7 @@ td input[type="checkbox"] {
   </div>
 </div>
 
-<div class="page" id="pg">
+<div class="page preview-hidden" id="pg">
 
   <!-- الترويسة -->
   <div class="hdr">
@@ -467,6 +473,12 @@ function setDate() {
 
 // حفظ PDF
 function saveAsPDF() {
+  const pg = document.getElementById('pg');
+  const wasHidden = pg.classList.contains('preview-hidden');
+  if (wasHidden) {
+    pg.classList.remove('preview-hidden');
+  }
+
   const ctrl = document.getElementById('controls');
   ctrl.style.display = 'none';
   
@@ -485,8 +497,13 @@ function saveAsPDF() {
     html2canvas:  { scale:2.5, useCORS:true, allowTaint:true, backgroundColor:'#ffffff' },
     jsPDF:        { unit:'mm', format:'a4', orientation:'portrait' }
   };
-  html2pdf().set(opt).from(document.getElementById('pg')).save()
-    .finally(() => { ctrl.style.display = 'flex'; });
+  html2pdf().set(opt).from(pg).save()
+    .finally(() => { 
+      ctrl.style.display = 'flex'; 
+      if (wasHidden) {
+        pg.classList.add('preview-hidden');
+      }
+    });
 }
 
 // إعادة تعيين
@@ -530,6 +547,9 @@ function fillRowFromContactForm() {
   if (destEl) { destEl.value = destVal; autoGrow(destEl); }
   if (noteEl) { noteEl.value = noteVal; autoGrow(noteEl); }
   
+  // إظهار المعاينة تلقائياً عند إدخال البيانات
+  showPreview();
+  
   // تحريك السطر التلقائي للسطر التالي للتسهيل على المستخدم
   if (rowNum < ROWS) {
     document.getElementById('entryRow').value = rowNum + 1;
@@ -556,6 +576,34 @@ function loadRowToContactForm() {
   document.getElementById('entryTimeTo').value = document.getElementById('time_to' + rowNum).value || '';
   document.getElementById('entryDestination').value = document.getElementById('destination' + rowNum).value || '';
   document.getElementById('entryNote').value = document.getElementById('note' + rowNum).value || '';
+}
+
+// إظهار المعاينة تلقائياً
+function showPreview() {
+  const pg = document.getElementById('pg');
+  const btn = document.getElementById('btnPreview');
+  if (pg.classList.contains('preview-hidden')) {
+    pg.classList.remove('preview-hidden');
+    if (btn) {
+      btn.innerHTML = '👁️ إخفاء المعاينة';
+      btn.style.background = 'linear-gradient(135deg,#c41e3a,#9a1830)';
+    }
+  }
+}
+
+// تبديل حالة المعاينة (عرض/إخفاء)
+function togglePreview() {
+  const pg = document.getElementById('pg');
+  const btn = document.getElementById('btnPreview');
+  if (pg.classList.contains('preview-hidden')) {
+    pg.classList.remove('preview-hidden');
+    btn.innerHTML = '👁️ إخفاء المعاينة';
+    btn.style.background = 'linear-gradient(135deg,#c41e3a,#9a1830)';
+  } else {
+    pg.classList.add('preview-hidden');
+    btn.innerHTML = '👁️ عرض المعاينة';
+    btn.style.background = 'linear-gradient(135deg,#2a5a8c,#1a3a5c)';
+  }
 }
 
 buildTable();
