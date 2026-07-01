@@ -592,6 +592,10 @@ function showPreview() {
       btn.style.background = 'linear-gradient(135deg,#c41e3a,#9a1830)';
     }
   }
+  // تحديث الارتفاع لكافة الحقول بعد إظهار المعاينة لحساب scrollHeight بشكل صحيح
+  document.querySelectorAll('#tbody textarea').forEach(textarea => {
+    autoGrow(textarea);
+  });
   if (entryCard) {
     entryCard.style.display = 'none';
   }
@@ -607,6 +611,11 @@ function togglePreview() {
     btn.innerHTML = '👁️ إخفاء المعاينة';
     btn.style.background = 'linear-gradient(135deg,#c41e3a,#9a1830)';
     if (entryCard) entryCard.style.display = 'none';
+    
+    // تحديث الارتفاع لكافة الحقول بعد إظهار المعاينة
+    document.querySelectorAll('#tbody textarea').forEach(textarea => {
+      autoGrow(textarea);
+    });
   } else {
     pg.classList.add('preview-hidden');
     btn.innerHTML = '👁️ عرض المعاينة';
