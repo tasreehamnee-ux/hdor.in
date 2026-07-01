@@ -193,6 +193,106 @@ td input[type="checkbox"] {
   .page { box-shadow:none; margin:0; width:100%; padding:8mm 20mm 15mm; }
   .controls { display:none !important; }
   td input, td textarea { border:none !important; background:transparent !important; }
+  .entry-card { display: none !important; }
+}
+
+/* ====== نموذج التواصل لإدخال البيانات ====== */
+.entry-card {
+  width: 100%;
+  max-width: 210mm;
+  background: linear-gradient(135deg, #ffffff, #f4f7fa);
+  border: 1px solid #c8d3df;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 0 auto 20px auto;
+  box-shadow: 0 4px 15px rgba(26, 58, 92, 0.08);
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+  box-sizing: border-box;
+}
+.entry-card-header {
+  border-bottom: 2px solid #1a3a5c;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+  text-align: right;
+}
+.entry-card-header h3 {
+  color: #1a3a5c;
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.entry-card-header p {
+  color: #555;
+  font-size: 12px;
+}
+.entry-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 15px;
+  text-align: right;
+}
+.entry-form-grid .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.entry-form-grid .col-small {
+  max-width: 120px;
+}
+@media (max-width: 768px) {
+  .entry-form-grid .col-small {
+    max-width: 100%;
+  }
+}
+.entry-form-grid label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a3a5c;
+}
+.entry-form-grid input, .entry-form-grid select {
+  padding: 8px 12px;
+  border: 1.5px solid #c8d3df;
+  border-radius: 6px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  color: #111;
+  background-color: #fff;
+  transition: all 0.2s;
+}
+.entry-form-grid input:focus, .entry-form-grid select:focus {
+  outline: none;
+  border-color: #1a3a5c;
+  box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.15);
+  background-color: #fcfdfe;
+}
+.entry-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.btn-fill {
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #1a3a5c, #2a5a8c);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-fill:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 </style>
 </head>
@@ -202,6 +302,66 @@ td input[type="checkbox"] {
 <div class="controls" id="controls">
   <button class="btn btn-save" onclick="saveAsPDF()">💾 حفظ كـ PDF</button>
   <button class="btn btn-reset" onclick="resetForm()">🔄 إعادة تعيين</button>
+</div>
+
+<!-- نموذج التواصل لإدخال البيانات -->
+<div class="entry-card" id="entryCard">
+  <div class="entry-card-header">
+    <h3>📋 نموذج تواصل لإدخال البيانات في الجدول</h3>
+    <p>قم بملء الحقول أدناه ثم اضغط على زر التحديث لتعبئة سطر الجدول المختار تلقائياً.</p>
+  </div>
+  
+  <div class="entry-form-grid">
+    <div class="form-group col-small">
+      <label for="entryRow">السطر المستهدف</label>
+      <select id="entryRow" onchange="loadRowToContactForm()">
+        <option value="1">السطر 1</option>
+        <option value="2">السطر 2</option>
+        <option value="3">السطر 3</option>
+        <option value="4">السطر 4</option>
+        <option value="5">السطر 5</option>
+        <option value="6">السطر 6</option>
+        <option value="7">السطر 7</option>
+        <option value="8">السطر 8</option>
+        <option value="9">السطر 9</option>
+        <option value="10">السطر 10</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="entryName">اسم الموظف</label>
+      <input type="text" id="entryName" placeholder="أدخل اسم الموظف">
+    </div>
+    
+    <div class="form-group">
+      <label for="entryTitle">العنوان الوظيفي</label>
+      <input type="text" id="entryTitle" placeholder="أدخل العنوان الوظيفي">
+    </div>
+    
+    <div class="form-group col-small">
+      <label for="entryTimeFrom">من الساعة</label>
+      <input type="text" id="entryTimeFrom" placeholder="مثال: 08:00 ص">
+    </div>
+    
+    <div class="form-group col-small">
+      <label for="entryTimeTo">إلى الساعة</label>
+      <input type="text" id="entryTimeTo" placeholder="مثال: 02:00 م">
+    </div>
+    
+    <div class="form-group">
+      <label for="entryDestination">اسم الجهة المقصودة بالواجب</label>
+      <input type="text" id="entryDestination" placeholder="أدخل جهة الواجب">
+    </div>
+    
+    <div class="form-group">
+      <label for="entryNote">ملاحظات</label>
+      <input type="text" id="entryNote" placeholder="ملاحظات (إن وجدت)">
+    </div>
+  </div>
+  
+  <div class="entry-actions">
+    <button type="button" class="btn-fill" onclick="fillRowFromContactForm()">✍️ تحديث الجدول بالبيانات</button>
+  </div>
 </div>
 
 <div class="page" id="pg">
@@ -342,6 +502,60 @@ function resetForm() {
     document.getElementById('destination'+i).value = '';
     document.getElementById('note'+i).value = '';
   }
+}
+
+// تعبئة السطر من نموذج التواصل
+function fillRowFromContactForm() {
+  const rowNum = parseInt(document.getElementById('entryRow').value);
+  if (rowNum < 1 || rowNum > ROWS) return;
+  
+  const nameVal = document.getElementById('entryName').value;
+  const titleVal = document.getElementById('entryTitle').value;
+  const timeFromVal = document.getElementById('entryTimeFrom').value;
+  const timeToVal = document.getElementById('entryTimeTo').value;
+  const destVal = document.getElementById('entryDestination').value;
+  const noteVal = document.getElementById('entryNote').value;
+  
+  const nameEl = document.getElementById('name' + rowNum);
+  const titleEl = document.getElementById('title' + rowNum);
+  const timeFromEl = document.getElementById('time_from' + rowNum);
+  const timeToEl = document.getElementById('time_to' + rowNum);
+  const destEl = document.getElementById('destination' + rowNum);
+  const noteEl = document.getElementById('note' + rowNum);
+  
+  if (nameEl) { nameEl.value = nameVal; autoGrow(nameEl); }
+  if (titleEl) { titleEl.value = titleVal; autoGrow(titleEl); }
+  if (timeFromEl) { timeFromEl.value = timeFromVal; autoGrow(timeFromEl); }
+  if (timeToEl) { timeToEl.value = timeToVal; autoGrow(timeToEl); }
+  if (destEl) { destEl.value = destVal; autoGrow(destEl); }
+  if (noteEl) { noteEl.value = noteVal; autoGrow(noteEl); }
+  
+  // تحريك السطر التلقائي للسطر التالي للتسهيل على المستخدم
+  if (rowNum < ROWS) {
+    document.getElementById('entryRow').value = rowNum + 1;
+    loadRowToContactForm();
+  } else {
+    // تفريغ الحقول إذا وصلنا للسطر الأخير
+    document.getElementById('entryName').value = '';
+    document.getElementById('entryTitle').value = '';
+    document.getElementById('entryTimeFrom').value = '';
+    document.getElementById('entryTimeTo').value = '';
+    document.getElementById('entryDestination').value = '';
+    document.getElementById('entryNote').value = '';
+  }
+}
+
+// تحميل بيانات السطر لنموذج التواصل عند تغيير السطر المستهدف
+function loadRowToContactForm() {
+  const rowNum = parseInt(document.getElementById('entryRow').value);
+  if (rowNum < 1 || rowNum > ROWS) return;
+  
+  document.getElementById('entryName').value = document.getElementById('name' + rowNum).value || '';
+  document.getElementById('entryTitle').value = document.getElementById('title' + rowNum).value || '';
+  document.getElementById('entryTimeFrom').value = document.getElementById('time_from' + rowNum).value || '';
+  document.getElementById('entryTimeTo').value = document.getElementById('time_to' + rowNum).value || '';
+  document.getElementById('entryDestination').value = document.getElementById('destination' + rowNum).value || '';
+  document.getElementById('entryNote').value = document.getElementById('note' + rowNum).value || '';
 }
 
 buildTable();
