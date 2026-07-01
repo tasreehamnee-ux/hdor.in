@@ -334,6 +334,11 @@ td input[type="checkbox"] {
       </select>
     </div>
     
+    <div class="form-group col-small">
+      <label for="entryUnit">الوحدة</label>
+      <input type="text" id="entryUnit" placeholder="اسم الوحدة" oninput="document.getElementById('unitName').value = this.value">
+    </div>
+    
     <div class="form-group">
       <label for="entryName">اسم الموظف</label>
       <input type="text" id="entryName" placeholder="أدخل اسم الموظف">
@@ -510,6 +515,7 @@ function saveAsPDF() {
 function resetForm() {
   if (!confirm('هل تريد مسح جميع البيانات؟')) return;
   document.getElementById('unitName').value = '';
+  document.getElementById('entryUnit').value = '';
   setDate();
   for (let i=1; i<=ROWS; i++) {
     document.getElementById('name'+i).value = '';
@@ -608,6 +614,7 @@ function togglePreview() {
 
 buildTable();
 setDate();
+document.getElementById('entryUnit').value = document.getElementById('unitName').value || '';
 </script>
 </body>
 </html>
