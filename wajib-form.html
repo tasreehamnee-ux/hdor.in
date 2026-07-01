@@ -311,6 +311,7 @@ td input[type="checkbox"] {
 </div>
 
 <!-- نموذج التواصل لإدخال البيانات -->
+<input type="hidden" id="entryRow" value="1">
 <div class="entry-card" id="entryCard">
   <div class="entry-card-header">
     <h3>📋 نموذج تواصل لإدخال البيانات في الجدول</h3>
@@ -318,21 +319,6 @@ td input[type="checkbox"] {
   </div>
   
   <div class="entry-form-grid">
-    <div class="form-group col-small">
-      <label for="entryRow">السطر المستهدف</label>
-      <select id="entryRow" onchange="loadRowToContactForm()">
-        <option value="1">السطر 1</option>
-        <option value="2">السطر 2</option>
-        <option value="3">السطر 3</option>
-        <option value="4">السطر 4</option>
-        <option value="5">السطر 5</option>
-        <option value="6">السطر 6</option>
-        <option value="7">السطر 7</option>
-        <option value="8">السطر 8</option>
-        <option value="9">السطر 9</option>
-        <option value="10">السطر 10</option>
-      </select>
-    </div>
     
     <div class="form-group">
       <label for="entryName">اسم الموظف</label>
@@ -456,12 +442,12 @@ function buildTable() {
     tr.className = 'er';
     tr.innerHTML = `
       <td>${i}</td>
-      <td><textarea id="name${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
-      <td><textarea id="title${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
-      <td><textarea id="time_from${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
-      <td><textarea id="time_to${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
-      <td><textarea id="destination${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
-      <td><textarea id="note${i}" rows="1" oninput="autoGrow(this)"></textarea></td>
+      <td><textarea id="name${i}" rows="1" oninput="autoGrow(this)" onfocus="setTargetRow(${i})"></textarea></td>
+      <td><textarea id="title${i}" rows="1" oninput="autoGrow(this)" onfocus="setTargetRow(${i})"></textarea></td>
+      <td><textarea id="time_from${i}" rows="1" oninput="autoGrow(this)" onfocus="setTargetRow(${i})"></textarea></td>
+      <td><textarea id="time_to${i}" rows="1" oninput="autoGrow(this)" onfocus="setTargetRow(${i})"></textarea></td>
+      <td><textarea id="destination${i}" rows="1" oninput="autoGrow(this)" onfocus="setTargetRow(${i})"></textarea></td>
+      <td><textarea id="note${i}" rows="1" oninput="autoGrow(this)" onfocus="setTargetRow(${i})"></textarea></td>
     `;
     tb.appendChild(tr);
   }
@@ -516,6 +502,7 @@ function resetForm() {
   if (!confirm('هل تريد مسح جميع البيانات؟')) return;
   document.getElementById('unitName').value = '';
   document.getElementById('entryUnit').value = '';
+  document.getElementById('entryRow').value = '1';
   setDate();
   for (let i=1; i<=ROWS; i++) {
     document.getElementById('name'+i).value = '';
@@ -582,6 +569,15 @@ function loadRowToContactForm() {
   document.getElementById('entryTimeTo').value = document.getElementById('time_to' + rowNum).value || '';
   document.getElementById('entryDestination').value = document.getElementById('destination' + rowNum).value || '';
   document.getElementById('entryNote').value = document.getElementById('note' + rowNum).value || '';
+}
+
+// تعيين السطر النشط للتحرير عند الضغط على خلايا الجدول
+function setTargetRow(i) {
+  const entryRow = document.getElementById('entryRow');
+  if (entryRow && parseInt(entryRow.value) !== i) {
+    entryRow.value = i;
+    loadRowToContactForm();
+  }
 }
 
 // إظهار المعاينة تلقائياً
