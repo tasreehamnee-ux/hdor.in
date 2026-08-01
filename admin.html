@@ -399,9 +399,9 @@
                 let attachmentHtml = '<span style="color: #999;">لا يوجد</span>';
                 if (sub.attachment) {
                     if (sub.attachment.path && !sub.attachment.note) {
-                        attachmentHtml = `<a href="${sub.attachment.path}" target="_blank" class="nav-btn primary" style="padding: 4px 10px; font-size: 0.75rem; text-decoration: none;">📥 تحميل PDF</a>`;
+                        attachmentHtml = `<a href="${sub.attachment.path}" target="_blank" class="nav-btn primary" style="padding: 4px 10px; font-size: 0.75rem; text-decoration: none;">📥 فتح / تحميل PDF</a>`;
                     } else if (sub.attachment.blob) {
-                        attachmentHtml = `<button onclick="downloadOfflineAttachment(${sub.id})" class="nav-btn primary" style="padding: 4px 10px; font-size: 0.75rem;">📥 تحميل PDF</button>`;
+                        attachmentHtml = `<button onclick="downloadOfflineAttachment(${sub.id})" class="nav-btn primary" style="padding: 4px 10px; font-size: 0.75rem;">📥 فتح / تحميل PDF</button>`;
                     } else if (sub.attachment.originalName) {
                         const szText = sub.attachment.size ? ` (${formatFileSize(sub.attachment.size)})` : '';
                         attachmentHtml = `<span title="${sub.attachment.note || 'مرفق'}" style="color: #27ae60; font-size: 0.8rem; font-weight: bold;">📎 ${sub.attachment.originalName}${szText}</span>`;

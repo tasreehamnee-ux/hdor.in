@@ -1364,9 +1364,45 @@
 
                 if (serverAvailable) {
                     let uploadSuccess = false;
+                    let uploadedAttachmentId = null;
 
-                    // If attachment exists, try sending with full file binary if file size is reasonable (<4MB) or attempt direct POST
                     if (currentAttachment) {
+                        const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB chunks to stay within Vercel's limit
+                        if (currentAttachment.size > CHUNK_SIZE) {
+                            try {
+                                showToast('⏳ جاري إعداد ورَفْع المرفق (' + formatFileSize(currentAttachment.size) + ')...');
+                                const totalChunks = Math.ceil(currentAttachment.size / CHUNK_SIZE);
+                                const uploadId = Date.now().toString();
+
+                                for (let i = 0; i < totalChunks; i++) {
+                                    const start = i * CHUNK_SIZE;
+                                    const end = Math.min(start + CHUNK_SIZE, currentAttachment.size);
+                                    const chunkBlob = currentAttachment.slice(start, end);
+
+                                    const chunkFormData = new FormData();
+                                    chunkFormData.append('uploadId', uploadId);
+                                    chunkFormData.append('chunkIndex', i);
+                                    chunkFormData.append('totalChunks', totalChunks);
+                                    chunkFormData.append('originalName', currentAttachment.name);
+                                    chunkFormData.append('chunk', chunkBlob, currentAttachment.name);
+
+                                    showToast(`⏳ جاري رفع المرفق: جزء ${i + 1} من ${totalChunks}...`);
+                                    const chunkResp = await fetch('/api/submissions/upload-chunk', {
+                                        method: 'POST',
+                                        body: chunkFormData
+                                    });
+                                    const chunkRes = await chunkResp.json();
+                                    if (!chunkRes.success) {
+                                        throw new Error(chunkRes.message || 'فشل رفع أجزاء المرفق');
+                                    }
+                                }
+                                uploadedAttachmentId = uploadId;
+                            } catch (chunkErr) {
+                                console.warn('Chunked upload failed:', chunkErr);
+                            }
+                        }
+
+                        // Try direct single POST if not chunked or if uploadId is set
                         try {
                             const formData = new FormData();
                             formData.append('unitName', submissionPayload.unitName);
@@ -1374,7 +1410,13 @@
                             formData.append('endDate', submissionPayload.endDate);
                             formData.append('weeks', JSON.stringify(submissionPayload.weeks));
                             formData.append('notes', submissionPayload.notes);
-                            formData.append('attachment', currentAttachment);
+                            
+                            if (uploadedAttachmentId) {
+                                formData.append('attachmentId', uploadedAttachmentId);
+                                formData.append('attachmentName', currentAttachment.name);
+                            } else {
+                                formData.append('attachment', currentAttachment);
+                            }
 
                             const response = await fetch('/api/submissions', {
                                 method: 'POST',
@@ -1389,11 +1431,11 @@
                                 }
                             }
                         } catch (errUpload) {
-                            console.warn('Direct attachment upload attempt failed, switching to metadata fallback:', errUpload);
+                            console.warn('Direct submission upload attempt failed, switching to metadata fallback:', errUpload);
                         }
                     }
 
-                    // Fallback: If no attachment or if binary upload failed (e.g. Vercel 4.5MB payload limit), send submission with attachment metadata
+                    // Fallback if direct POST failed
                     if (!uploadSuccess) {
                         const formData = new FormData();
                         formData.append('unitName', submissionPayload.unitName);

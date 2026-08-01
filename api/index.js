@@ -241,6 +241,124 @@ async function getSubmissionById(id) {
   return list.find(s => s.id === id) || null;
 }
 
+const ATTACHMENTS_COLLECTION = 'submissions_attachments';
+
+async function saveAttachmentData(id, buffer, mimeType, originalName) {
+  await initDatabase();
+  const base64Data = buffer.toString('base64');
+  const chunkSize = 2 * 1024 * 1024; // 2MB chunk
+  const totalChunks = Math.ceil(base64Data.length / chunkSize);
+
+  const meta = {
+    id: id.toString(),
+    mimeType: mimeType || 'application/pdf',
+    originalName: originalName || 'attachment.pdf',
+    totalChunks: totalChunks,
+    size: buffer.length
+  };
+
+  if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
+    if (realtimeDb) {
+      await realtimeDb.ref(`${ATTACHMENTS_COLLECTION}/${id}/meta`).set(meta);
+      for (let i = 0; i < totalChunks; i++) {
+        const chunkStr = base64Data.substring(i * chunkSize, (i + 1) * chunkSize);
+        await realtimeDb.ref(`${ATTACHMENTS_COLLECTION}/${id}/chunks/${i}`).set(chunkStr);
+      }
+    } else {
+      await fetch(getFirebaseRestUrl(`${ATTACHMENTS_COLLECTION}/${id}/meta`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(meta)
+      });
+      for (let i = 0; i < totalChunks; i++) {
+        const chunkStr = base64Data.substring(i * chunkSize, (i + 1) * chunkSize);
+        await fetch(getFirebaseRestUrl(`${ATTACHMENTS_COLLECTION}/${id}/chunks/${i}`), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(chunkStr)
+        });
+      }
+    }
+    return;
+  }
+
+  if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
+    await firestoreDb.collection(ATTACHMENTS_COLLECTION).doc(id.toString()).set({
+      ...meta,
+      data: base64Data
+    });
+    return;
+  }
+
+  if (activeDbType === DB_TYPE.MONGODB) {
+    const db = dbClient.db(DB_NAME);
+    await db.collection(ATTACHMENTS_COLLECTION).updateOne(
+      { id: id.toString() },
+      { $set: { ...meta, data: base64Data } },
+      { upsert: true }
+    );
+    return;
+  }
+
+  // Filesystem fallback
+  const attachDir = path.join(__dirname, '../uploads/attachments');
+  if (!fs.existsSync(attachDir)) fs.mkdirSync(attachDir, { recursive: true });
+  fs.writeFileSync(path.join(attachDir, `attachment-${id}.pdf`), buffer);
+}
+
+async function getAttachmentBuffer(id) {
+  await initDatabase();
+
+  if (activeDbType === DB_TYPE.FIREBASE_RTDB) {
+    let chunks = null;
+    if (realtimeDb) {
+      const snap = await realtimeDb.ref(`${ATTACHMENTS_COLLECTION}/${id}`).once('value');
+      const val = snap.val();
+      if (val) chunks = val.chunks;
+    } else {
+      const resp = await fetch(getFirebaseRestUrl(`${ATTACHMENTS_COLLECTION}/${id}`));
+      if (resp.ok) {
+        const val = await resp.json();
+        if (val) chunks = val.chunks;
+      }
+    }
+
+    if (chunks) {
+      let fullBase64 = '';
+      if (Array.isArray(chunks)) {
+        fullBase64 = chunks.join('');
+      } else if (typeof chunks === 'object') {
+        fullBase64 = Object.values(chunks).join('');
+      }
+      if (fullBase64) {
+        return Buffer.from(fullBase64, 'base64');
+      }
+    }
+  }
+
+  if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
+    const doc = await firestoreDb.collection(ATTACHMENTS_COLLECTION).doc(id.toString()).get();
+    if (doc.exists && doc.data().data) {
+      return Buffer.from(doc.data().data, 'base64');
+    }
+  }
+
+  if (activeDbType === DB_TYPE.MONGODB) {
+    const db = dbClient.db(DB_NAME);
+    const doc = await db.collection(ATTACHMENTS_COLLECTION).findOne({ id: id.toString() });
+    if (doc && doc.data) {
+      return Buffer.from(doc.data, 'base64');
+    }
+  }
+
+  const attachFile = path.join(__dirname, `../uploads/attachments/attachment-${id}.pdf`);
+  if (fs.existsSync(attachFile)) {
+    return fs.readFileSync(attachFile);
+  }
+
+  return null;
+}
+
 async function saveSubmission(submission) {
   await initDatabase();
   
@@ -436,6 +554,52 @@ async function updateGovernorateFile(unitName, newWeeks) {
   }
 }
 
+// API 0: Chunked upload for large attachments
+const uploadSessions = {};
+app.post('/api/submissions/upload-chunk', (req, res, next) => {
+  upload.single('chunk')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: 'Chunk upload error: ' + err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const { uploadId, chunkIndex, totalChunks, originalName } = req.body;
+    if (!uploadId || chunkIndex === undefined || !totalChunks || !req.file) {
+      return res.status(400).json({ success: false, message: 'Missing chunk parameters' });
+    }
+
+    const cIdx = parseInt(chunkIndex);
+    const tChunks = parseInt(totalChunks);
+
+    if (!uploadSessions[uploadId]) {
+      uploadSessions[uploadId] = {
+        chunks: [],
+        originalName: originalName || 'attachment.pdf',
+        mimeType: req.file.mimetype || 'application/pdf',
+        receivedCount: 0
+      };
+    }
+
+    const session = uploadSessions[uploadId];
+    session.chunks[cIdx] = req.file.buffer;
+    session.receivedCount++;
+
+    if (session.receivedCount === tChunks) {
+      const finalBuffer = Buffer.concat(session.chunks);
+      await saveAttachmentData(uploadId, finalBuffer, session.mimeType, session.originalName);
+      delete uploadSessions[uploadId];
+      return res.json({ success: true, attachmentId: uploadId, complete: true });
+    }
+
+    res.json({ success: true, attachmentId: uploadId, complete: false });
+  } catch (err) {
+    console.error('Chunk upload error:', err);
+    res.status(500).json({ success: false, message: 'Error processing chunk: ' + err.message });
+  }
+});
+
 // API 1: Submit new data
 app.post('/api/submissions', (req, res, next) => {
   upload.single('attachment')(req, res, (err) => {
@@ -453,7 +617,7 @@ app.post('/api/submissions', (req, res, next) => {
   });
 }, async (req, res) => {
   try {
-    const { unitName, startDate, endDate, weeks, notes } = req.body;
+    const { unitName, startDate, endDate, weeks, notes, attachmentId } = req.body;
     
     if (!unitName || !startDate || !endDate) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -484,7 +648,6 @@ app.post('/api/submissions', (req, res, next) => {
 
       await initDatabase();
       if (activeDbType.startsWith('firebase') && storageBucket) {
-        // Upload attachment to Firebase Storage
         const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
         await fileRef.save(req.file.buffer, {
           contentType: req.file.mimetype,
@@ -495,13 +658,19 @@ app.post('/api/submissions', (req, res, next) => {
           }
         });
       } else {
-        // Fallback: Store as Base64 (Checking DB document/payload size limits for Firebase RTDB & Firestore)
-        const base64Length = req.file.buffer.toString('base64').length;
-        if (base64Length > 800 * 1024) { // Roughly 800KB limit for inline DB base64
-          newSubmission.attachment.note = 'حجم الملف كبير جداً للتخزين المباشر في قاعدة البيانات - محفوظ محلياً في جهاز المرسل';
-        } else {
-          newSubmission.attachment.data = req.file.buffer.toString('base64');
-        }
+        await saveAttachmentData(id, req.file.buffer, req.file.mimetype, req.file.originalname);
+      }
+    } else if (attachmentId) {
+      const attachBuf = await getAttachmentBuffer(attachmentId);
+      if (attachBuf) {
+        await saveAttachmentData(id, attachBuf, 'application/pdf', req.body.attachmentName || 'attachment.pdf');
+        newSubmission.attachment = {
+          originalName: req.body.attachmentName || 'attachment.pdf',
+          filename: `attachment-${id}.pdf`,
+          path: `/api/submissions/attachment/${id}`,
+          size: attachBuf.length,
+          mimeType: 'application/pdf'
+        };
       }
     } else if (req.body.attachmentInfo) {
       try {
@@ -509,9 +678,10 @@ app.post('/api/submissions', (req, res, next) => {
         newSubmission.attachment = {
           originalName: info.originalName || info.name || 'attachment.pdf',
           filename: `attachment-${id}.pdf`,
+          path: `/api/submissions/attachment/${id}`,
           size: info.size || 0,
           type: info.type || 'application/pdf',
-          note: info.note || 'ملف كبير - محفوظ محلياً في جهاز المرسل'
+          note: info.note || 'ملف محفوظ محلياً في جهاز المرسل'
         };
       } catch (e) {
         console.error('Error parsing attachmentInfo:', e);
@@ -521,7 +691,6 @@ app.post('/api/submissions', (req, res, next) => {
     await saveSubmission(newSubmission);
     await updateGovernorateFile(unitName, parsedWeeks);
 
-    // Exclude heavy base64 file data from the immediate return payload
     const returnData = { ...newSubmission };
     if (returnData.attachment) {
       delete returnData.attachment.data;
@@ -554,7 +723,6 @@ app.get('/api/governorates/:name', (req, res) => {
 app.get('/api/submissions', async (req, res) => {
   try {
     const submissions = await getAllSubmissions();
-    // Exclude heavy base64 file data from the list query
     const cleanedSubmissions = submissions.map(sub => {
       const cleaned = { ...sub };
       if (cleaned.attachment) {
@@ -583,20 +751,25 @@ app.get('/api/submissions/attachment/:id', async (req, res) => {
     if (submission.attachment.data) {
       fileBuffer = Buffer.from(submission.attachment.data, 'base64');
     } else if (activeDbType.startsWith('firebase') && storageBucket) {
-      // Download from Firebase Storage
       const fileRef = storageBucket.file(`attachments/attachment-${id}.pdf`);
       const [exists] = await fileRef.exists();
-      if (!exists) {
-        return res.status(404).send('Attachment file not found in Storage');
+      if (exists) {
+        const [downloadedBuffer] = await fileRef.download();
+        fileBuffer = downloadedBuffer;
       }
-      const [downloadedBuffer] = await fileRef.download();
-      fileBuffer = downloadedBuffer;
-    } else {
-      return res.status(404).send('Attachment data not found');
     }
     
+    if (!fileBuffer) {
+      fileBuffer = await getAttachmentBuffer(id);
+    }
+    
+    if (!fileBuffer) {
+      return res.status(404).send('Attachment file data not found');
+    }
+
+    const origName = submission.attachment.originalName || 'attachment.pdf';
     res.setHeader('Content-Type', submission.attachment.mimeType || 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(submission.attachment.originalName)}"`);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(origName)}"`);
     res.send(fileBuffer);
   } catch (error) {
     console.error('Attachment retrieve error:', error);
