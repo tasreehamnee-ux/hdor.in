@@ -495,14 +495,10 @@ app.post('/api/submissions', (req, res, next) => {
           }
         });
       } else {
-        // Fallback: Store as Base64 (Checking Firestore document size limit)
-        if (activeDbType === DB_TYPE.FIREBASE_FIRESTORE) {
-          const base64Length = req.file.buffer.toString('base64').length;
-          if (base64Length > 800 * 1024) { // Roughly 800KB
-            newSubmission.attachment.note = 'حجم الملف كبير جداً بالنسبة لـ Firestore - متوفر في جهاز المرسل محلياً';
-          } else {
-            newSubmission.attachment.data = req.file.buffer.toString('base64');
-          }
+        // Fallback: Store as Base64 (Checking DB document/payload size limits for Firebase RTDB & Firestore)
+        const base64Length = req.file.buffer.toString('base64').length;
+        if (base64Length > 800 * 1024) { // Roughly 800KB limit for inline DB base64
+          newSubmission.attachment.note = 'حجم الملف كبير جداً للتخزين المباشر في قاعدة البيانات - محفوظ محلياً في جهاز المرسل';
         } else {
           newSubmission.attachment.data = req.file.buffer.toString('base64');
         }
