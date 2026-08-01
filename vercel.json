@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "env": {
+    "FIREBASE_DATABASE_URL": "https://hdor-f3fbd-default-rtdb.firebaseio.com"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+node_modules/
+submissions.json
+uploads/
+.gemini/
+.agents/
+*.log

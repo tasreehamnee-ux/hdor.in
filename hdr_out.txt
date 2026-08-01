@@ -1,0 +1,12 @@
+
+    <div class="hright">
+      <div class="mn">وزارة الشباب والرياضة</div>
+      <div class="of">قسم التصاريح الامنية</div>
+      <div class="dp">شعبة المتابعة</div>
+    </div>
+    <div class="hc">
+      <img src="...base64..."hlft">
+      <div class="fr"><label>الوحدة:</label><span class="fl"></span></div>
+      <div class="fr"><label>التاريخ:</label><span class="fl"></span></div>
+    </div>
+  
