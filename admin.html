@@ -222,7 +222,7 @@
         <div style="display: flex; justify-content: flex-end; margin-top: 25px; padding-right: 50px;">
     <div style="text-align: center;">
         <div style="font-weight: bold; font-size: 1rem; color: #333; margin-bottom: 40px;">مسؤول الشعبة</div>
-        <div style="border-top: 1px solid #000; width: 180px; margin: 0 auto; padding-top: 5px; font-weight: bold;">التوقيع</div>
+        
     </div>
 </div>
     </div>
@@ -599,7 +599,7 @@
                     return;
                 }
                 const currentUnitName = unitElement.textContent.trim();
-                const unitSubmissions = allSubmissions.filter(s => s.unitName === currentUnitName);
+                const unitSubmissions = allSubmissions.filter(s => s.unitName && s.unitName.trim() === currentUnitName);
                 
                 if (unitSubmissions.length === 0) {
                     showToast('❌ لا توجد بيانات لهذه الوحدة');
@@ -607,7 +607,7 @@
                     return;
                 }
 
-                const weeksGroup = { 1: [], 2: [], 3: [], 4: [] };
+                const weeksGroup = { 1: [], 2: [], 3: [], 4: [], 5: [] };
                 const latestWeeks = {};
                 unitSubmissions.forEach(sub => {
                     if (sub.weeks) {
@@ -638,7 +638,7 @@
                 let maxEmployees = 0;
                 
                 const weeksData = [];
-                for (let wNum = 1; wNum <= 4; wNum++) {
+                for (let wNum = 1; wNum <= 5; wNum++) {
                     if (weeksGroup[wNum].length > 0) {
                         weeksData.push({ wNum, employees: weeksGroup[wNum] });
                         if (weeksGroup[wNum].length > maxEmployees) {
@@ -796,7 +796,7 @@
                         signatureDiv.innerHTML = `
                             <div style="text-align: center;">
                                 <div style="font-weight: bold; font-size: 1rem; color: #333; margin-bottom: 40px;">مسؤول الشعبة</div>
-                                <div style="border-top: 1px solid #000; width: 180px; margin: 0 auto; padding-top: 5px; font-weight: bold;">التوقيع</div>
+                                
                             </div>
                         `;
                         tempDiv.appendChild(signatureDiv);
@@ -809,10 +809,20 @@
                     document.body.removeChild(tempDiv);
                     
                     const ratio = contentWidth / canvas.width;
-                    const pageScaledHeight = canvas.height * ratio;
+                    let pageScaledHeight = canvas.height * ratio;
+                    let pageScaledWidth = contentWidth;
+                    
+                    const maxAllowedHeight = pdfHeight - (margin * 2);
+                    if (pageScaledHeight > maxAllowedHeight) {
+                        const shrinkRatio = maxAllowedHeight / pageScaledHeight;
+                        pageScaledHeight = pageScaledHeight * shrinkRatio;
+                        pageScaledWidth = pageScaledWidth * shrinkRatio;
+                    }
+                    
+                    const xOffset = margin + (contentWidth - pageScaledWidth) / 2;
                     
                     const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, pageScaledHeight);
+                    pdf.addImage(imgData, 'PNG', xOffset, margin, pageScaledWidth, pageScaledHeight);
                     
                     pdf.setFontSize(10);
                     pdf.text(`${pIdx + 1} / ${totalPages}`, pdfWidth / 2, pdfHeight - margin, { align: 'center' });
@@ -862,7 +872,7 @@
                 }
 
                 // Group entries by week number (1 to 4)
-                const weeksGroup = { 1: [], 2: [], 3: [], 4: [] };
+                const weeksGroup = { 1: [], 2: [], 3: [], 4: [], 5: [] };
                 submissions.sort((a, b) => a.id - b.id);
 
                 const latestWeeks = {};
@@ -906,7 +916,7 @@
                 let sheetsAdded = 0;
 
                 // Loop through weeks and create separate sheets
-                for (let wNum = 1; wNum <= 4; wNum++) {
+                for (let wNum = 1; wNum <= 5; wNum++) {
                     const employees = weeksGroup[wNum];
                     if (employees.length === 0) continue;
 
@@ -987,9 +997,9 @@
 
                 for (let uIdx = 0; uIdx < uniqueUnits.length; uIdx++) {
                     const currentUnitName = uniqueUnits[uIdx];
-                    const unitSubmissions = submissions.filter(s => s.unitName === currentUnitName);
+                    const unitSubmissions = submissions.filter(s => s.unitName && s.unitName.trim() === currentUnitName);
                     
-                    const weeksGroup = { 1: [], 2: [], 3: [], 4: [] };
+                    const weeksGroup = { 1: [], 2: [], 3: [], 4: [], 5: [] };
                     const latestWeeks = {};
                     unitSubmissions.forEach(sub => {
                         if (sub.weeks) {
@@ -1020,7 +1030,7 @@
                     let maxEmployees = 0;
                     
                     const weeksData = [];
-                    for (let wNum = 1; wNum <= 4; wNum++) {
+                    for (let wNum = 1; wNum <= 5; wNum++) {
                         if (weeksGroup[wNum].length > 0) {
                             weeksData.push({ wNum, employees: weeksGroup[wNum] });
                             if (weeksGroup[wNum].length > maxEmployees) {
@@ -1167,7 +1177,7 @@
                             signatureDiv.innerHTML = `
                                 <div style="text-align: center;">
                                     <div style="font-weight: bold; font-size: 1rem; color: #333; margin-bottom: 40px;">مسؤول الشعبة</div>
-                                    <div style="border-top: 1px solid #000; width: 180px; margin: 0 auto; padding-top: 5px; font-weight: bold;">التوقيع</div>
+                                    
                                 </div>
                             `;
                             tempDiv.appendChild(signatureDiv);
