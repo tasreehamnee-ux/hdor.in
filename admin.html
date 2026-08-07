@@ -666,13 +666,15 @@
                 }
 
                 let weeksPerPage = 1;
-                if (maxEmployees >= 1 && maxEmployees <= 2) {
-                    weeksPerPage = 2;
-                } else if (maxEmployees >= 3 && maxEmployees <= 5) {
-                    weeksPerPage = 2;
-                } else if (maxEmployees >= 6) {
-                    weeksPerPage = 1;
-                }
+                    if (maxEmployees === 1) {
+                        weeksPerPage = 4;
+                    } else if (maxEmployees === 2) {
+                        weeksPerPage = 3;
+                    } else if (maxEmployees >= 3 && maxEmployees <= 5) {
+                        weeksPerPage = 2;
+                    } else if (maxEmployees >= 6) {
+                        weeksPerPage = 1;
+                    }
                 
                 const totalPages = Math.ceil(weeksData.length / weeksPerPage);
 
@@ -1068,8 +1070,10 @@
                     }
 
                     let weeksPerPage = 1;
-                    if (maxEmployees >= 1 && maxEmployees <= 2) {
-                        weeksPerPage = 2;
+                    if (maxEmployees === 1) {
+                        weeksPerPage = 4;
+                    } else if (maxEmployees === 2) {
+                        weeksPerPage = 3;
                     } else if (maxEmployees >= 3 && maxEmployees <= 5) {
                         weeksPerPage = 2;
                     } else if (maxEmployees >= 6) {
