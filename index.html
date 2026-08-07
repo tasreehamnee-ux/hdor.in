@@ -1092,79 +1092,108 @@
 
         async function generateReportPDF() {
             const { jsPDF } = window.jspdf;
-            const reportContent = document.getElementById('reportContent');
-
-            // إنشاء نسخة مؤقتة من المحتوى مع ضبط العرض والخطوط
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = reportContent.innerHTML;
-            tempDiv.style.width = '1123px';
-            tempDiv.style.backgroundColor = '#ffffff';
-            tempDiv.style.padding = '15px 20px';
-            tempDiv.style.boxSizing = 'border-box';
-            tempDiv.style.direction = 'rtl';
-            tempDiv.style.fontFamily = "'Cairo', sans-serif";
-
-            // تقليل الهوامش الرأسية بين الأسابيع
-            tempDiv.querySelectorAll('.monthly-week').forEach(mw => {
-                mw.style.marginBottom = '10px';
-            });
-
-            // تكبير الجداول والخطوط مع تقليل الحشوة الداخلية للحفاظ على الصفحة الأولى
-            tempDiv.querySelectorAll('table th').forEach(th => {
-                th.style.fontSize = '13px';
-                th.style.padding = '5px 3px';
-                th.style.fontWeight = 'bold';
-            });
-            tempDiv.querySelectorAll('table td').forEach(td => {
-                td.style.fontSize = '13px';
-                td.style.padding = '4px 3px';
-                td.style.fontWeight = 'bold';
-            });
-
-            // إضافة تذييل الصفحة وتوقيع المشرف
-            const footerDiv = document.createElement('div');
-            footerDiv.style.display = 'flex';
-            footerDiv.style.justifyContent = 'flex-start';
-            footerDiv.style.alignItems = 'center';
-            footerDiv.style.marginTop = '12px';
-            footerDiv.style.paddingTop = '8px';
-            footerDiv.style.borderTop = '2px solid #eee';
-            footerDiv.style.fontFamily = "'Cairo', sans-serif";
-            footerDiv.style.fontSize = '15px';
-            footerDiv.style.fontWeight = 'bold';
-            footerDiv.style.color = '#333';
-            footerDiv.innerHTML = '<div>توقيع المشرف: <span style=\'color: #c41e3a; font-size: 17px;\'>سامر ستار</span></div>';
-            tempDiv.appendChild(footerDiv);
-
-            document.body.appendChild(tempDiv);
-            tempDiv.style.position = 'absolute';
-            tempDiv.style.left = '-9999px';
-            tempDiv.style.top = '0';
-
-            const canvas = await html2canvas(tempDiv, {
-                scale: 2.5,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: '#ffffff',
-                windowWidth: 1123,
-                logging: false
-            });
-
-            document.body.removeChild(tempDiv);
-
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
             const margin = 8;
             const pdfWidth = 297;
             const pdfHeight = 210;
-            const contentWidth = pdfWidth - (margin * 2);  // 281mm
-            const contentHeight = pdfHeight - (margin * 2); // 194mm
+            const contentWidth = pdfWidth - (margin * 2);
+            const contentHeight = pdfHeight - (margin * 2);
 
-            const ratioX = contentWidth / canvas.width;
-            const ratioY = contentHeight / canvas.height;
-            const totalScaledHeight = canvas.height * ratioX;
+            const filteredWeeks = Object.values(monthlyData.weeks).sort((a, b) => a.weekNumber - b.weekNumber);
+            
+            let maxEmployees = 0;
+            filteredWeeks.forEach(w => {
+                if (w.employees && w.employees.length > maxEmployees) {
+                    maxEmployees = w.employees.length;
+                }
+            });
 
-            // إذا كان ارتفاع التقرير قريباً من صفحة واحدة، فإنه يتم ملاءمته لتنزل كافة العناصر وتوقيع المشرف بالكامل بالصفحة الأولى
-            if (totalScaledHeight <= contentHeight * 1.25) {
+            let weeksPerPage = 1;
+            if (maxEmployees >= 1 && maxEmployees <= 2) {
+                weeksPerPage = 2;
+            } else if (maxEmployees >= 3 && maxEmployees <= 5) {
+                weeksPerPage = 2;
+            } else if (maxEmployees >= 6) {
+                weeksPerPage = 1;
+            }
+
+            const totalPages = Math.ceil(filteredWeeks.length / weeksPerPage);
+
+            for (let pIdx = 0; pIdx < totalPages; pIdx++) {
+                if (pIdx > 0) pdf.addPage('a4', 'landscape');
+
+                const tempDiv = document.createElement('div');
+                tempDiv.style.width = '1123px';
+                tempDiv.style.backgroundColor = '#ffffff';
+                tempDiv.style.padding = '15px 20px';
+                tempDiv.style.boxSizing = 'border-box';
+                tempDiv.style.direction = 'rtl';
+                tempDiv.style.fontFamily = "'Cairo', sans-serif";
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '0';
+
+                const headerHtml = document.querySelector('.report-header').outerHTML;
+                tempDiv.innerHTML = headerHtml;
+
+                const startWeekIdx = pIdx * weeksPerPage;
+                const endWeekIdx = Math.min(startWeekIdx + weeksPerPage, filteredWeeks.length);
+                const weeksToRender = filteredWeeks.slice(startWeekIdx, endWeekIdx);
+
+                const reportContainerNodes = document.getElementById('monthlyReportContainer').children;
+
+                weeksToRender.forEach(weekData => {
+                    const weekIdxInDOM = filteredWeeks.indexOf(weekData);
+                    if (reportContainerNodes[weekIdxInDOM]) {
+                        const clonedWeek = reportContainerNodes[weekIdxInDOM].cloneNode(true);
+                        clonedWeek.style.marginBottom = '10px';
+                        tempDiv.appendChild(clonedWeek);
+                    }
+                });
+
+                tempDiv.querySelectorAll('table th').forEach(th => {
+                    th.style.fontSize = '13px';
+                    th.style.padding = '5px 3px';
+                    th.style.fontWeight = 'bold';
+                });
+                tempDiv.querySelectorAll('table td').forEach(td => {
+                    td.style.fontSize = '13px';
+                    td.style.padding = '4px 3px';
+                    td.style.fontWeight = 'bold';
+                });
+
+                if (pIdx === totalPages - 1) {
+                    const footerDiv = document.createElement('div');
+                    footerDiv.style.display = 'flex';
+                    footerDiv.style.justifyContent = 'flex-start';
+                    footerDiv.style.alignItems = 'center';
+                    footerDiv.style.marginTop = '12px';
+                    footerDiv.style.paddingTop = '8px';
+                    footerDiv.style.borderTop = '2px solid #eee';
+                    footerDiv.style.fontFamily = "'Cairo', sans-serif";
+                    footerDiv.style.fontSize = '15px';
+                    footerDiv.style.fontWeight = 'bold';
+                    footerDiv.style.color = '#333';
+                    footerDiv.innerHTML = '<div>مسؤول الشعبة: <span style=\'color: #c41e3a; font-size: 17px;\'>سامر ستار</span></div>';
+                    tempDiv.appendChild(footerDiv);
+                }
+
+                document.body.appendChild(tempDiv);
+
+                const canvas = await html2canvas(tempDiv, {
+                    scale: 2.5,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    windowWidth: 1123,
+                    logging: false
+                });
+
+                document.body.removeChild(tempDiv);
+
+                const ratioX = contentWidth / canvas.width;
+                const ratioY = contentHeight / canvas.height;
+                
                 const fitRatio = Math.min(ratioX, ratioY);
                 const scaledWidth = canvas.width * fitRatio;
                 const scaledHeight = canvas.height * fitRatio;
@@ -1173,36 +1202,6 @@
 
                 const imgData = canvas.toDataURL('image/png');
                 pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
-            } else {
-                const pageCanvasHeight = contentHeight / ratioX;
-                let remainingCanvasHeight = canvas.height;
-                let pageIndex = 0;
-
-                while (remainingCanvasHeight > 0) {
-                    if (pageIndex > 0) pdf.addPage('a4', 'landscape');
-                    const sliceHeight = Math.min(pageCanvasHeight, remainingCanvasHeight);
-
-                    const pageCanvas = document.createElement('canvas');
-                    pageCanvas.width = canvas.width;
-                    pageCanvas.height = sliceHeight;
-
-                    const ctx = pageCanvas.getContext('2d');
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-                    ctx.drawImage(
-                        canvas,
-                        0, pageIndex * pageCanvasHeight, canvas.width, sliceHeight,
-                        0, 0, canvas.width, sliceHeight
-                    );
-
-                    const pageImgData = pageCanvas.toDataURL('image/png');
-                    const pageScaledHeight = sliceHeight * ratioX;
-
-                    pdf.addImage(pageImgData, 'PNG', margin, margin, contentWidth, pageScaledHeight);
-
-                    remainingCanvasHeight -= sliceHeight;
-                    pageIndex++;
-                }
             }
 
             return { pdf };

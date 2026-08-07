@@ -627,7 +627,8 @@
                                 days: emp.days,
                                 shift: emp.shift || 'morning',
                                 startDate: week.startDate,
-                                endDate: week.endDate
+                                endDate: week.endDate,
+                                notes: week.notes || ''
                             });
                         });
                     }
@@ -666,7 +667,7 @@
 
                 let weeksPerPage = 1;
                 if (maxEmployees >= 1 && maxEmployees <= 2) {
-                    weeksPerPage = 4;
+                    weeksPerPage = 2;
                 } else if (maxEmployees >= 3 && maxEmployees <= 5) {
                     weeksPerPage = 2;
                 } else if (maxEmployees >= 6) {
@@ -784,6 +785,19 @@
 
                         table.appendChild(tbody);
                         tableWrapper.appendChild(table);
+                        if (employees[0] && employees[0].notes) {
+                            const notesDiv = document.createElement('div');
+                            notesDiv.style.background = '#fef3c7';
+                            notesDiv.style.border = '1px solid #f59e0b';
+                            notesDiv.style.borderRadius = '4px';
+                            notesDiv.style.padding = '4px 8px';
+                            notesDiv.style.marginTop = '4px';
+                            notesDiv.style.fontSize = '0.85rem';
+                            notesDiv.style.color = '#92400e';
+                            notesDiv.style.fontWeight = '600';
+                            notesDiv.innerHTML = `📌 <span style="color: #c41e3a;">ملاحظات:</span> ${employees[0].notes}`;
+                            tableWrapper.appendChild(notesDiv);
+                        }
                         tempDiv.appendChild(tableWrapper);
                     });
                     
@@ -795,8 +809,8 @@
                         signatureDiv.style.paddingRight = '50px';
                         signatureDiv.innerHTML = `
                             <div style="text-align: center;">
-                                <div style="font-weight: bold; font-size: 1rem; color: #333; margin-bottom: 40px;">مسؤول الشعبة</div>
-                                
+                                <div style="font-weight: bold; font-size: 1rem; color: #333; margin-bottom: 10px;">مسؤول الشعبة</div>
+                                <div style="font-weight: bold; font-size: 1.2rem; color: #c41e3a;">سامر ستار</div>
                             </div>
                         `;
                         tempDiv.appendChild(signatureDiv);
@@ -1019,7 +1033,8 @@
                                     days: emp.days,
                                     shift: emp.shift || 'morning',
                                     startDate: week.startDate,
-                                    endDate: week.endDate
+                                    endDate: week.endDate,
+                                    notes: week.notes || ''
                                 });
                             });
                         }
@@ -1054,7 +1069,7 @@
 
                     let weeksPerPage = 1;
                     if (maxEmployees >= 1 && maxEmployees <= 2) {
-                        weeksPerPage = 4;
+                        weeksPerPage = 2;
                     } else if (maxEmployees >= 3 && maxEmployees <= 5) {
                         weeksPerPage = 2;
                     } else if (maxEmployees >= 6) {
@@ -1165,6 +1180,19 @@
 
                             table.appendChild(tbody);
                             tableWrapper.appendChild(table);
+                            if (employees[0] && employees[0].notes) {
+                                const notesDiv = document.createElement('div');
+                                notesDiv.style.background = '#fef3c7';
+                                notesDiv.style.border = '1px solid #f59e0b';
+                                notesDiv.style.borderRadius = '4px';
+                                notesDiv.style.padding = '4px 8px';
+                                notesDiv.style.marginTop = '4px';
+                                notesDiv.style.fontSize = '0.85rem';
+                                notesDiv.style.color = '#92400e';
+                                notesDiv.style.fontWeight = '600';
+                                notesDiv.innerHTML = `📌 <span style="color: #c41e3a;">ملاحظات:</span> ${employees[0].notes}`;
+                                tableWrapper.appendChild(notesDiv);
+                            }
                             tempDiv.appendChild(tableWrapper);
                         });
                         
